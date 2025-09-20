@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Portfolio Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: linear-gradient(120deg,#ffeedd 0%,#ddf6ff 100%);
+  --card: #fffdfe;
+  --accent: #ffaf2c;
+  --accent2: #28c2ff;
+  --btn-bg: #ffb032;
+  --btn-hover: #ea7002;
+  --border: #ffeece;
+  --shadow: 0 9px 28px rgba(255,184,50,0.08);
+  --badge-bg: #e4ffef;
+  --badge-text: #127057;
+  --tag-bg: #f9e2db;
+  --tag-text: #e26b00;
+  --section-band: #ffc174;
+  --text: #222034;
+}
+body {
+  font-family: 'Poppins', sans-serif; 
+  background: var(--bg); 
+  margin: 0;
+  min-height: 100vh; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+  padding: 0 0 32px 0; 
+  transition: background 0.3s;
+  color: var(--text);
+}
+.theme-switch { 
+  margin: 17px 0 12px 0; 
+  width: 100%; 
+  max-width: 650px; 
+  display: flex; 
+  gap: 12px; 
+  justify-content: flex-end;
+}
+.theme-btn { 
+  padding: 6px 17px; 
+  font-size: 15px; 
+  border-radius: 7px; 
+  cursor: pointer; 
+  border: none;
+  transition: transform 0.2s;
+}
+.theme-btn:hover {
+  transform: scale(1.05);
+}
+.theme-day { background: #3f6dbd; color: #fff; }
+.theme-night { background: #252343; color: #fff; }
+.theme-warm { background: #ffe4b2; color: #b64d00; }
+.theme-forest { background: #486b00; color: #e6f9b9; }
+.theme-ocean { background: #00aaff; color: #fff; }
+.theme-mint { background: #31c48d; color: #fff; }
+
+#form-container, #profile {
+  background: var(--card); 
+  color: var(--text); 
+  border-radius: 18px; 
+  box-shadow: var(--shadow);
+  width: 100%; 
+  max-width: 650px; 
+  margin: 0 auto 2rem auto;
+  padding: 33px 28px 32px 28px; 
+  box-sizing: border-box;
+  border: 2px solid var(--border); 
+  display: none;
+}
+
+.profile-img-container {
+  width: 240px !important;
+  height: 240px !important;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  border: 4px solid var(--accent);
+  background: #f0f0f0;
+}
+
+.profile-img-container img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  transition: transform 0.22s, box-shadow 0.21s;
+  cursor: pointer;
+}
+
+.profile-img-container img.pop {
+  transform: scale(1.13);     
+  box-shadow: 0 9px 24px rgba(51, 51, 51, 0.5); 
+  transition: transform 0.23s cubic-bezier(0.53,1.81,0.44,1.05), box-shadow 0.21s;
+  z-index: 4;
+}
+
+#form-container.active { display: block; }
+#profile { display: none; }
+#profile.active { display: block; }
+
+#form-container label {
+  display: block; 
+  margin: 23px 0 8px 0;
+  font-size: 1.08em; 
+  font-weight: 900; 
+  letter-spacing: 0.7px; 
+  color: #be6407;
+}
+
+#form-container input, #form-container textarea, #form-container select {
+  width: 100%; 
+  margin-bottom: 18px; 
+  padding: 15px 14px; 
+  font-size: 1em;
+  border-radius: 10px; 
+  border: 1.7px solid #ffc174; 
+  background: #fffdfa; 
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+  transition: border-color 0.3s;
+}
+
+#form-container input:focus, #form-container textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+#form-container input[type="checkbox"] { 
+  width: auto; 
+  margin-right:11px; 
+  accent-color: var(--accent);
+}
+
+#form-container .checkbox-row {
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+#form-container .checkbox-label { 
+  font-weight:600; 
+  color: #278052; 
+  font-size: .97em;
+  display: flex;
+  align-items: center;
+}
+
+#form-container button[type="submit"] { 
+  margin-top: 21px; 
+  border-radius: 12px; 
+  font-size: 1.13em;
+  background: var(--btn-bg);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  cursor: pointer;
+  transition: background 0.3s;
+  width: 100%;
+}
+
+#form-container button[type="submit"]:hover {
+  background: var(--btn-hover);
+}
+
+#form-container input[type='file'] { 
+  padding: 8px 0 8px 0;
+  border: 2px dashed var(--accent);
+  background: transparent;
+}
+
+.edit-skill{ 
+  margin-left:7px;
+  margin-bottom:3px; 
+  font-size:13px;
+  flex: 2;
+}
+
+.edit-skill input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
+.edit-skill button{
+  background:var(--accent2); 
+  color:#fff; 
+  border:none; 
+  border-radius:7px;
+  padding:3px 8px;
+  cursor:pointer;
+  margin-left: 8px;
+}
+
+.skill-row {
+  display:flex;
+  align-items:center;
+  margin-bottom:15px;
+  gap:10px;
+  flex-wrap: wrap;
+}
+
+.skill-label {
+  font-weight:700;
+  color:#278052;
+  font-size:1.07em;
+  min-width:120px;
+  letter-spacing:.5px;
+  background:#ecfff8;
+  border:none;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.skill-bar-bg{
+  background:#e2e8f0;
+  border-radius:7px;
+  flex:3;
+  height:18px;
+  overflow:hidden;
+  position:relative;
+}
+
+.skill-bar-fill{
+  background:var(--accent);
+  height:18px;
+  border-radius:7px;
+  transition:width .6s;
+}
+
+.skill-bar-val{
+  margin-left:9px;
+  font-size:.97em;
+  min-width: 40px;
+}
+.add-skill-btn{
+  background:var(--accent2);
+  color:#fff;
+  margin:0 0 13px 0;
+  border:none;
+  border-radius:7px;
+  padding:8px 15px;
+  cursor:pointer;
+  transition: background 0.3s;
+}
+.add-skill-btn:hover {
+  background: #1a9fd6;
+}
+.project-toggle{
+  cursor:pointer;
+  font-size:17px;
+  color:var(--accent2);
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  font-weight: 600;
+}
+
+.project-toggle i{
+  margin-right:6px;
+  font-weight:800;
+}
+
+.proj-list{
+  margin-bottom:17px;
+}
+
+.proj-item{
+  background:#f9e2db;
+  border-radius:13px;
+  padding:13px 12px 10px 12px;
+  margin-bottom:13px;
+  border: 1px solid #ead5c7;
+}
+
+.proj-item label {
+  margin: 10px 0 5px 0 !important;
+  font-size: 0.9em !important;
+  color: #8b4513 !important;
+}
+
+.proj-item input {
+  margin-bottom: 10px !important;
+  padding: 8px 10px !important;
+  font-size: 0.9em !important;
+}
+
+.delproj-btn{
+  background:#f86e1c;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:4px 13px;
+  float:right;
+  margin:0 0 7px 10px;
+  cursor:pointer;
+  transition: background 0.3s;
+}
+
+.delproj-btn:hover {
+  background: #e55a0a;
+}
+
+.add-proj-btn{
+  background:#28c2ff;
+  color:#fff;
+  margin:5px 0 0 6px;
+  border:none;
+  border-radius:7px;
+  padding:8px 14px;
+  cursor:pointer;
+  font-weight:600;
+  transition: background 0.3s;
+}
+
+.add-proj-btn:hover {
+  background: #1a9fd6;
+}
+
+.section { 
+  margin-top:38px; 
+}
+
+.section-title { 
+  font-family:'Poppins',sans-serif; 
+  font-weight:900; 
+  font-size:20px; 
+  color:var(--accent); 
+  display:flex; 
+  align-items:center; 
+  margin-bottom:13px;
+}
+
+.section-title i {
+  margin-right:10px;
+  font-size:22px;
+}
+
+.section-band {
+  height:8px;
+  background:var(--section-band);
+  border-radius:8px;
+  margin-bottom:22px;
+  opacity:.11;
+}
+
+.badges { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 7px;
+}
+
+.badge { 
+  background: var(--badge-bg); 
+  color: var(--badge-text); 
+  border-radius:13px; 
+  padding:8px 13px; 
+  font-weight:700; 
+  font-size:15px; 
+  margin-top:4px;
+}
+
+.tags {
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 7px;
+}
+
+.tag { 
+  background: linear-gradient(90deg,#ffebb3 0%,#c6f1fa 100%); 
+  border-radius: 12px; 
+  padding: 8px 17px; 
+  color: #ffa700; 
+  font-weight: 700; 
+  font-size: 16px; 
+  margin-top: 6px; 
+  cursor:pointer; 
+  box-shadow: 0 2px 7px rgba(255, 167, 0, 0.11);
+  transition: all 0.3s;
+}
+
+.tag:hover { 
+  background: linear-gradient(90deg,#ffc2ea 0%,#bfffee 100%); 
+  color:#df1dfa;
+  transform: translateY(-2px);
+}
+
+.profile-actions { 
+  display: flex; 
+  gap: 18px; 
+  margin-top: 36px; 
+  justify-content: center;
+}
+
+button.action-edit { 
+  background-color: #28c2ff; 
+  width: auto; 
+  padding: 10px 35px; 
+  font-size: 15px; 
+  border-radius: 8px; 
+  color: #fff; 
+  font-weight: 700; 
+  border: none; 
+  box-shadow:0 1px 6px rgba(34, 182, 252, 0.07);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button.action-edit:hover { 
+  background: #099eff;
+}
+
+button.action-delete { 
+  background-color: #ff7f00; 
+  width: auto; 
+  padding: 10px 35px; 
+  font-size: 15px; 
+  border-radius: 8px; 
+  color: #fff; 
+  font-weight: 700; 
+  border: none; 
+  box-shadow:0 1px 6px rgba(255, 176, 50, 0.2);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button.action-delete:hover { 
+  background: #ea7002;
+}
+
+.download-section { 
+  display:flex; 
+  justify-content:center; 
+  margin-top: 33px; 
+}
+
+.resume-download { 
+  color:#1052d9;
+  font-weight:700;
+  font-size:1.13em;
+  background:none; 
+  border:2px solid #1052d9; 
+  border-radius:8px; 
+  padding:10px 28px; 
+  cursor:pointer;
+  transition: all 0.3s;
+}
+
+.resume-download:hover { 
+  background:#1052d9;
+  color:#fff;
+}
+
+.project-hide {
+  display: none;
+}
+
+.project-card {
+  background:#f2faf8;
+  border-radius:13px;
+  padding:15px 17px 17px 17px;
+  margin-bottom:11px;
+  box-shadow:0 2px 15px rgba(39, 128, 82, 0.07);
+  border: 1px solid #e0f2ed;
+}
+
+.project-title {
+  font-size:1.08em;
+  font-weight:900;
+  color:#28a085;
+  margin-bottom: 8px;
+}
+
+.project-desc {
+  font-size: 0.95em;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.project-stack {
+  font-size:.97em;
+  color:#ff7f00;
+  font-weight:700;
+  margin-bottom: 8px;
+}
+
+.project-link {
+  font-size:.98em;
+  color:#1a70fb;
+  text-decoration:underline;
+  padding-left:6px;
+}
+
+.project-link:hover {
+  color: #0d47a1;
+}
+
+.sports-high {
+  margin:9px 0 0 0;
+}
+
+.sports-high .badge {
+  background:#ffe6f9;
+  color:#9500a1;
+}
+
+#profile hr {
+  height:2px;
+  background:var(--accent);
+  border:0;
+  margin:32px 0;
+  opacity:.39;
+}
+
+.header-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header-info {
+  margin-top: 20px;
+}
+
+.resume-title {
+  font-size: 2.2em;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.resume-sub {
+  font-size: 1.1em;
+  color: var(--text);
+  margin-bottom: 15px;
+  opacity: 0.8;
+}
+
+.resume-quote {
+  font-size: 1em;
+  color: var(--text);
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.profile-row {
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.label {
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 10px;
+}
+
+#profile-skills .skill-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+#profile-skills .skill-label {
+  font-weight: 700;
+  color: #278052;
+  font-size: 1.07em;
+  min-width: 150px;
+  letter-spacing: 0.5px;
+  background: none;
+  padding: 0;
+}
+
+#profile-skills .skill-bar-bg {
+  background: #e2e8f0;
+  border-radius: 7px;
+  flex: 2;
+  height: 18px;
+  overflow: hidden;
+  position: relative;
+}
+
+#profile-skills .skill-bar-fill {
+  background: var(--accent);
+  height: 18px;
+  border-radius: 7px;
+  transition: width 0.6s;
+}
+
+#profile-skills .skill-bar-val {
+  margin-left: 15px;
+  font-size: 0.97em;
+  font-weight: 600;
+  min-width: 40px;
+}
+
+.achievement-certificates {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cert-item {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-width: 150px;
+}
+
+.cert-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Theme Variations */
+body.theme-night { 
+  --bg:#252343; 
+  --card:#1e1e34; 
+  --accent:#3fabff; 
+  --accent2:#ffaf2c; 
+  --text:#f4f6fa; 
+  --section-band:#2170d7; 
+  --tag-bg:#33345c; 
+  --tag-text:#24d5fe; 
+  --badge-bg:#313655; 
+  --badge-text:#22fff9; 
+  --btn-bg:#33345c; 
+  --btn-hover:#3fabff;
+  --border:#2a2a4a;
+}
+
+body.theme-warm { 
+  --bg:#fff7ed; 
+  --card:#fffbf6; 
+  --accent:#FF8800; 
+  --accent2:#e67100; 
+  --text:#522701; 
+  --section-band:#b64d00; 
+  --tag-bg:#ffe4b2; 
+  --tag-text:#e67100; 
+  --badge-bg:#fff7da; 
+  --badge-text:#a85d04; 
+  --btn-bg:#FF8800; 
+  --btn-hover:#e67100;
+  --border:#f4d5a6;
+}
+
+body.theme-day {
+  --bg: linear-gradient(120deg, #cce7ff 0%, #f0f9ff 100%);
+  --card: #ffffff;
+  --accent: #1a3d7c;
+  --accent2: #6390d6;
+  --text: #1a3d7c;
+  --btn-bg: #3f6dbd;
+  --btn-hover: #25518a;
+  --border: #d3e3fa;
+  --section-band: #6c8cd5;
+  --tag-bg: #c1d9ff;
+  --tag-text: #25518a;
+  --badge-bg: #e6f0ff;
+  --badge-text: #1a3d7c;
+}
+
+body.theme-forest {
+  --bg: linear-gradient(135deg, #2e4600 0%, #486b00 100%);
+  --card: #374d00;
+  --accent: #a2c523;
+  --accent2: #d9f99d;
+  --text: #e6f9b9;
+  --btn-bg: #8abf1f;
+  --btn-hover: #639018;
+  --border: #5a7d00;
+  --section-band: #74a134;
+  --tag-bg: #b3cc7e;
+  --tag-text: #405400;
+  --badge-bg: #6b842d;
+  --badge-text: #daeabd;
+}
+
+body.theme-ocean {
+  --bg: linear-gradient(120deg, #87cefa 0%, #1e90ff 100%);
+  --card: #ecf6fe;
+  --accent: #006994;
+  --accent2: #30b6f6;
+  --text: #00334d;
+  --btn-bg: #00aaff;
+  --btn-hover: #0077a3;
+  --border: #b0e6ff;
+  --section-band: #24a1ce;
+  --tag-bg: #caecff;
+  --tag-text: #006994;
+  --badge-bg: #afe2fa;
+  --badge-text: #006994;
+}
+
+body.theme-mint {
+  --bg: linear-gradient(120deg, #bfffe2 0%, #82eefd 100%);
+  --card: #eafff9;
+  --accent: #1fbe84;
+  --accent2: #16cce0;
+  --text: #14786c;
+  --btn-bg: #31c48d;
+  --btn-hover: #0ba57e;
+  --border: #a6ffe9;
+  --section-band: #2ed8b6;
+  --tag-bg: #d6fff3;
+  --tag-text: #14786c;
+  --badge-bg: #c7fcee;
+  --badge-text: #1fbe84;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  #form-container,#profile{
+    max-width:99vw;
+    padding:12px 2vw !important;
+  }
+  .header-top{
+    flex-direction:column;
+    gap:14px;
+  }
+  .header-info{
+    padding-left:1px;
+  }
+  .section-band{
+    height:5px;
+  }
+  .skill-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .skill-label {
+    min-width: auto;
+    width: 100%;
+  }
+  .checkbox-row {
+    gap: 10px;
+  }
+  .profile-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width:520px){
+  .section-title{
+    font-size:15px;
+  }
+  .skill-label{
+    min-width:41px;
+  }
+  #profile img.profile-pic{
+    width:46px;
+    height:46px;
+  }
+  .profile-img-container {
+    width: 180px !important;
+    height: 180px !important;
+  }
+  .resume-title {
+    font-size: 1.8em;
+  }
+  .theme-switch {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .theme-btn {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .profile-img-container {
+    width: 240px !important;
+    height: 240px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+  }
+  .profile-img-container img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block;
+  }
+  body {
+    background: none !important;
+  } 
+  .theme-switch, .profile-actions, .download-section {
+    display: none !important;
+  }
+  #profile {
+    box-shadow: none !important; 
+    border: none !important;
+  }
+}
+
+.pdf-hide {
+  display: none !important;
+}
+
+/* Additional utility classes */
+.text-center {
+  text-align: center;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9em;
+  margin-top: 5px;
+  display: none;
+}
+
+.success-message {
+  color: #2e7d32;
+  font-size: 0.9em;
+  margin-top: 5px;
+  display: none;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+</head>
+<body class="theme-day">
+<div class="theme-switch">
+  <button class="theme-btn theme-day" onclick="setTheme('theme-day')" type="button">Day</button>
+  <button class="theme-btn theme-night" onclick="setTheme('theme-night')" type="button">Night</button>
+  <button class="theme-btn theme-warm" onclick="setTheme('theme-warm')" type="button">Warm</button>
+  <button class="theme-btn theme-forest" onclick="setTheme('theme-forest')" type="button">Forest</button>
+  <button class="theme-btn theme-ocean" onclick="setTheme('theme-ocean')" type="button">Ocean</button>
+  <button class="theme-btn theme-mint" onclick="setTheme('theme-mint')" type="button">Mint</button>
+</div>
+
+<div id="form-container" class="active">
+  <h1 style="color:var(--accent);text-align:center;font-size:27px;font-weight:800;margin-bottom:13px;">
+    Enter Your Details for Portfolio
+  </h1>
+  <form id="profile-form" autocomplete="off">
+    <label for="first-name">First Name<span style="color:#d00;">*</span>:</label>
+    <input type="text" id="first-name" required />
+    <div class="error-message" id="first-name-error">First name is required</div>
+    
+    <label for="last-name">Last Name<span style="color:#d00;">*</span>:</label>
+    <input type="text" id="last-name" required />
+    <div class="error-message" id="last-name-error">Last name is required</div>
+    
+    <label for="rollno">Roll Number (last 3 digits)<span style="color:#d00;">*</span>:</label>
+    <input type="number" id="rollno" required max="999" min="0" />
+    <div class="error-message" id="rollno-error">Roll number is required (0-999)</div>
+    
+    <label for="email">Email:</label>
+    <input type="email" id="email" />
+    <div class="error-message" id="email-error">Please enter a valid email</div>
+    
+    <label for="summary">Summary/About (leave blank for default):</label>
+    <textarea id="summary" placeholder="Write about yourself or leave blank for default summary"></textarea>
+    
+    <label for="hobbies">Hobbies:</label>
+    <textarea id="hobbies" placeholder="Chess, reading, coding"></textarea>
+    
+    <label>Programming Languages Known:</label>
+    <div class="checkbox-row" id="languagesbox">
+      <label class="checkbox-label"><input type="checkbox" value="C" />C</label>
+      <label class="checkbox-label"><input type="checkbox" value="C++" />C++</label>
+      <label class="checkbox-label"><input type="checkbox" value="Python" />Python</label>
+      <label class="checkbox-label"><input type="checkbox" value="Java" />Java</label>
+      <label class="checkbox-label"><input type="checkbox" value="JavaScript" />JavaScript</label>
+      <label class="checkbox-label"><input type="checkbox" value="Kotlin" />Kotlin</label>
+      <label class="checkbox-label"><input type="checkbox" value="Go" />Go</label>
+      <label class="checkbox-label"><input type="checkbox" value="Rust" />Rust</label>
+      <label class="checkbox-label"><input type="checkbox" value="SQL" />SQL</label>
+      <label class="checkbox-label"><input type="checkbox" value="Other" />Other</label>
+    </div>
+    
+    <label>Technical Areas:</label>
+    <div class="checkbox-row" id="techbox">
+      <label class="checkbox-label"><input type="checkbox" value="Web Development" />Web Development</label>
+      <label class="checkbox-label"><input type="checkbox" value="App Development" />App Development</label>
+      <label class="checkbox-label"><input type="checkbox" value="AI/ML" />AI/ML</label>
+      <label class="checkbox-label"><input type="checkbox" value="Database" />Database</label>
+      <label class="checkbox-label"><input type="checkbox" value="System Programming" />System Programming</label>
+      <label class="checkbox-label"><input type="checkbox" value="Other" />Other</label>
+    </div>
+    
+    <label>Skills & Proficiency:</label>
+    <div id="skills-area"></div>
+    <button type="button" class="add-skill-btn" onclick="addSkillInput()">+ Add Skill</button>
+    
+    <label class="project-toggle" onclick="toggleProjects()">
+      <i id="proj-arrow">▼</i> Projects <span style="font-weight:400;font-size:.95em;margin-left:8px;color:#bf6600;" id="proj-count"></span>
+    </label>
+    <div id="proj-fold" class="proj-list project-hide"></div>
+    <button type="button" class="add-proj-btn" onclick="addProjectInput()">+ Add Project</button>
+    
+    <label for="interests">Special Interests:</label>
+    <input type="text" id="interests" placeholder="Eg: web dev, sports, ML"/>
+    
+    <label for="sports">Sports/Clubs & Highlights:</label>
+    <input type="text" id="sports" placeholder="e.g., Football, State Debater, Robotics Club Head" />
+    
+    <label for="achievements">Achievements:</label>
+    <input type="text" id="achievements" placeholder="Hackathon winner; Internship at TCS" />
+    
+    <label for="whatsapp">WhatsApp No(s) (comma separated)<span style="color:#d00;">*</span>:</label>
+    <input type="text" id="whatsapp" required pattern="^(\d{10})(,\s*\d{10})*$" placeholder="9876543210,9123456780" />
+    <div class="error-message" id="whatsapp-error">Please enter valid 10-digit WhatsApp numbers</div>
+    
+    <label for="certificates">Upload Certificates (images/PDFs):</label>
+    <input type="file" id="certificates" multiple accept="image/*,application/pdf"/>
+    <div id="certificate-preview"></div>
+    
+    <label for="profile-pic">Upload Profile Picture:</label>
+    <input type="file" id="profile-pic" accept="image/*" />
+    <img id="profile-pic-preview" style="max-width:180px;display:none;margin-top:10px;border-radius:10px;" alt="Profile Picture Preview" />
+    
+    <button type="submit">Generate Portfolio</button>
+  </form>
+</div>
+
+<div id="profile">
+  <div class="header-top">
+    <div class="profile-img-container">
+      <img id="display-pic" class="profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Ccircle cx='120' cy='120' r='120' fill='%23f0f0f0'/%3E%3Ccircle cx='120' cy='90' r='35' fill='%23ccc'/%3E%3Cpath d='M60 180c0-33 27-60 60-60s60 27 60 60v40H60v-40z' fill='%23ccc'/%3E%3C/svg%3E" alt="Profile Picture" />
+    </div>
+    <div class="header-info">
+      <div class="resume-title" id="display-name">Your Name</div>
+      <div class="resume-sub">
+        <span id="display-rollno">Roll No</span>
+        <span>•</span> <span id="display-graduation">CSE 2027</span>
+        <span id="email-separator" style="display:none;">•</span> <span id="display-email"></span>
+      </div>
+      <div class="resume-quote" id="display-quote">Your professional summary will appear here</div>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="section">
+    <div class="section-title"><i>💻</i>Programming Languages</div>
+    <div class="badges" id="display-languages">
+      <div class="badge">Select languages in the form</div>
+    </div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title"><i>🧰</i>Technical Areas</div>
+    <div class="badges" id="display-tech">
+      <div class="badge">Select technical areas in the form</div>
+    </div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title"><i>🧑‍💻</i>Core Skills & Proficiency</div>
+    <div id="profile-skills"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title"><i>🛠️</i>Projects <span style="font-weight:300;font-size:17px;color:#ff7f00;" id="profile-proj-count"></span></div>
+    <div id="profile-projects" class="project-list project-hide"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div style="text-align:right;margin:0 0 13px 0;">
+    <span class="project-toggle" style="font-size:1em;cursor:pointer;" onclick="toggleProfileProjects()">
+      <i id="profile-proj-arrow">▼</i> Show/Hide All Project Info
+    </span>
+  </div>
+  
+  <div class="section" id="about-section" style="display:none;">
+    <div class="section-title"><i>🎯</i>About & Hobbies</div>
+    <div class="profile-row" id="hobby-row">
+      <span class="label">Hobbies:</span><span id="display-hobbies"></span>
+    </div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section" id="interest-section" style="display:none;">
+    <div class="section-title"><i>📚</i>Special Interests</div>
+    <div class="tags" id="display-interests"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title"><i>📞</i>Contact</div>
+    <div class="badges" id="display-whatsapp"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section sports-high" id="sports-section" style="display:none;">
+    <div class="section-title"><i>⚡</i>Sports & Highlights</div>
+    <div class="badges" id="display-sports"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="section" id="achieve-section" style="display:none;">
+    <div class="section-title"><i>🏆</i>Achievements & Certificates</div>
+    <div class="tags" id="display-achievements"></div>
+    <div id="achievement-certificates" class="achievement-certificates"></div>
+    <div class="section-band"></div>
+  </div>
+  
+  <div class="profile-actions">
+    <button class="action-edit" id="edit-btn">Edit Details</button>
+    <button class="action-delete" id="delete-btn">Delete Profile</button>
+  </div>
+  
+  <div class="download-section">
+    <button id="download-pdf" class="resume-download">Download PDF</button>
+  </div>
+</div>
+
+<script>
+const storageKey = 'studentPortfolio-2025';
+
+// Theme Management
+function setTheme(cls) { 
+  document.body.className = cls; 
+  localStorage.setItem('theme', cls); 
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTheme(localStorage.getItem('theme') || 'theme-day');
+
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      showProfile(JSON.parse(saved));
+    } catch(e) {
+      console.error('Error loading saved data:', e);
+      showForm();
+    }
+  } else {
+    showForm();
+  }
+  
+  setupSkills();
+  setupProjects();
+  setupEventListeners();
+});
+
+function setupEventListeners() {
+  document.getElementById('profile-form').addEventListener('submit', handleFormSubmit);
+  document.getElementById('edit-btn').addEventListener('click', handleEdit);
+  document.getElementById('delete-btn').addEventListener('click', handleDelete);
+  document.getElementById('download-pdf').addEventListener('click', handleDownload);
+  
+  // Profile picture preview
+  document.getElementById('profile-pic').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('profile-pic-preview');
+    
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.style.display = 'none';
+    }
+  });
+  
+  // Certificate preview
+  document.getElementById('certificates').addEventListener('change', function(e) {
+    const files = e.target.files;
+    const preview = document.getElementById('certificate-preview');
+    preview.innerHTML = '';
+    
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.maxWidth = '100px';
+          img.style.margin = '5px';
+          img.style.borderRadius = '5px';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  });
+  
+  // Input validation
+  setupInputValidation();
+}
+
+function setupInputValidation() {
+  const inputs = {
+    'first-name': validateRequired,
+    'last-name': validateRequired,
+    'rollno': validateRollNo,
+    'email': validateEmail,
+    'whatsapp': validateWhatsApp
+  };
+  
+  Object.keys(inputs).forEach(id => {
+    const input = document.getElementById(id);
+    const errorDiv = document.getElementById(id + '-error');
+    
+    input.addEventListener('blur', () => {
+      const isValid = inputs[id](input.value);
+      if (errorDiv) {
+        errorDiv.style.display = isValid ? 'none' : 'block';
+      }
+      input.style.borderColor = isValid ? '#ffc174' : '#d32f2f';
+    });
+    
+    input.addEventListener('input', () => {
+      if (input.style.borderColor === 'rgb(211, 47, 47)') {
+        const isValid = inputs[id](input.value);
+        if (isValid) {
+          input.style.borderColor = '#ffc174';
+          const errorDiv = document.getElementById(id + '-error');
+          if (errorDiv) errorDiv.style.display = 'none';
+        }
+      }
+    });
+  });
+}
+
+function validateRequired(value) {
+  return value && value.trim().length > 0;
+}
+
+function validateRollNo(value) {
+  const num = parseInt(value);
+  return !isNaN(num) && num >= 0 && num <= 999;
+}
+
+function validateEmail(value) {
+  if (!value) return true; // Email is optional
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(value);
+}
+
+function validateWhatsApp(value) {
+  if (!value) return false;
+  const phoneRegex = /^(\d{10})(,\s*\d{10})*$/;
+  return phoneRegex.test(value.trim());
+}
+
+// Projects Management
+let projFolded = true;
+const projectsData = [];
+
+function toggleProjects() {
+  projFolded = !projFolded;
+  const foldEl = document.getElementById('proj-fold');
+  foldEl.classList.toggle('project-hide', projFolded);
+  document.getElementById('proj-arrow').textContent = projFolded ? "▼" : "▲";
+}
+
+function setupProjects() {
+  projFolded = true;
+  document.getElementById('proj-arrow').textContent = "▼";
+  const foldEl = document.getElementById('proj-fold');
+  foldEl.innerHTML = '';
+  projectsData.length = 0;
+  addProjectInput();
+  if(projFolded) foldEl.classList.add('project-hide');
+}
+
+function addProjectInput(title = '', desc = '', stack = '', link = '') {
+  const list = document.getElementById('proj-fold');
+  const index = projectsData.length;
+  const el = document.createElement('div');
+  el.className = "proj-item";
+  el.setAttribute('data-index', index);
+  
+  el.innerHTML = `
+    <button class="delproj-btn" type="button" onclick="delProjectInput(this)">Delete</button>
+    <label>Project Title</label>
+    <input type="text" class="proj-field-title" placeholder="e.g., Attendance Manager" value="${title}"/>
+    <label>Description</label>
+    <input type="text" class="proj-field-desc" placeholder="One line about project" value="${desc}"/>
+    <label>Stack/Tags</label>
+    <input type="text" class="proj-field-stack" placeholder="e.g., React, Node.js, Mongo" value="${stack}"/>
+    <label>Link</label>
+    <input type="text" class="proj-field-link" placeholder="GitHub or demo" value="${link}"/>
+  `;
+  
+  list.appendChild(el);
+  projectsData.push({el, title, desc, stack, link});
+  updateProjectCount();
+}
+
+function delProjectInput(btn) {
+  const el = btn.closest('.proj-item');
+  const index = parseInt(el.getAttribute('data-index'));
+  el.remove();
+  projectsData.splice(index, 1);
+  updateProjectCount();
+  
+  // Update indices
+  document.querySelectorAll('#proj-fold .proj-item').forEach((item, i) => {
+    item.setAttribute('data-index', i);
+  });
+}
+
+function updateProjectCount() {
+  const count = document.querySelectorAll('#proj-fold .proj-item').length;
+  document.getElementById('proj-count').textContent = count ? `(${count})` : '';
+}
+
+// Skills Management
+let skillsList = [
+  {label:"Teamwork", val:60},
+  {label:"Communication", val:75},
+  {label:"Problem Solving", val:70},
+  {label:"Coding (General)", val:80},
+  {label:"Creativity", val:75}
+];
+
+function setupSkills() { 
+  renderSkills(); 
+}
+
+function renderSkills() {
+  const skillsDiv = document.getElementById('skills-area');
+  skillsDiv.innerHTML = '';
+  skillsList.forEach((skill, index) => {
+    skillsDiv.appendChild(createSkillRow(skill, index));
+  });
+}
+
+function createSkillRow(skill, index) {
+  const row = document.createElement('div');
+  row.className = "skill-row";
+
+  const labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.value = skill.label;
+  labelInput.className = 'skill-label';
+  labelInput.onchange = () => { skillsList[index].label = labelInput.value; };
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = 0;
+  slider.max = 100;
+  slider.value = skill.val;
+  slider.className = 'edit-skill';
+
+  const numInput = document.createElement('input');
+  numInput.type = 'number';
+  numInput.min = 0;
+  numInput.max = 100;
+  numInput.value = skill.val;
+  numInput.style = 'width:60px; margin-right:6px; font-size:0.98em; padding:4px;';
+
+  slider.oninput = () => {
+    skillsList[index].val = parseInt(slider.value, 10);
+    numInput.value = slider.value;
+  };
+
+  numInput.oninput = () => {
+    if (numInput.value >= 0 && numInput.value <= 100) {
+      slider.value = numInput.value;
+      skillsList[index].val = parseInt(numInput.value, 10);
+    }
+  };
+
+  const delButton = document.createElement('button');
+  delButton.type = 'button';
+  delButton.textContent = 'Delete';
+  delButton.className = 'edit-skill';
+  delButton.onclick = () => {
+    skillsList.splice(index, 1);
+    renderSkills();
+  };
+
+  row.appendChild(labelInput);
+  row.appendChild(slider);
+  row.appendChild(numInput);
+  row.appendChild(delButton);
+
+  return row;
+}
+
+function addSkillInput() {
+  skillsList.push({label: 'New Skill', val: 60});
+  renderSkills();
+}
+
+// Form handling
+function handleFormSubmit(e) {
+  e.preventDefault();
+  
+  // Validate required fields
+  const requiredFields = ['first-name', 'last-name', 'rollno', 'whatsapp'];
+  let isValid = true;
+  
+  requiredFields.forEach(id => {
+    const input = document.getElementById(id);
+    let fieldValid = false;
+    
+    switch(id) {
+      case 'rollno':
+        fieldValid = validateRollNo(input.value);
+        break;
+      case 'whatsapp':
+        fieldValid = validateWhatsApp(input.value);
+        break;
+      default:
+        fieldValid = validateRequired(input.value);
+    }
+    
+    if (!fieldValid) {
+      isValid = false;
+      input.style.borderColor = '#d32f2f';
+      const errorDiv = document.getElementById(id + '-error');
+      if (errorDiv) errorDiv.style.display = 'block';
+    }
+  });
+  
+  // Validate email if provided
+  const email = document.getElementById('email').value;
+  if (email && !validateEmail(email)) {
+    isValid = false;
+    document.getElementById('email').style.borderColor = '#d32f2f';
+    document.getElementById('email-error').style.display = 'block';
+  }
+  
+  if (!isValid) {
+    alert('Please fix the validation errors before submitting.');
+    return;
+  }
+  
+  const formData = collectFormData();
+  localStorage.setItem(storageKey, JSON.stringify(formData));
+  showProfile(formData);
+}
+
+function collectFormData() {
+  // Collect projects
+  const projects = [];
+  document.querySelectorAll('#proj-fold .proj-item').forEach(item => {
+    const title = item.querySelector('.proj-field-title').value.trim();
+    const desc = item.querySelector('.proj-field-desc').value.trim();
+    const stack = item.querySelector('.proj-field-stack').value.trim();
+    const link = item.querySelector('.proj-field-link').value.trim();
+    
+    if (title) {
+      projects.push({title, desc, stack, link});
+    }
+  });
+  
+  // Collect languages
+  const languages = [];
+  document.querySelectorAll('#languagesbox input[type="checkbox"]:checked').forEach(cb => {
+    languages.push(cb.value);
+  });
+  
+  // Collect tech areas
+  const techAreas = [];
+  document.querySelectorAll('#techbox input[type="checkbox"]:checked').forEach(cb => {
+    techAreas.push(cb.value);
+  });
+  
+  // Get profile picture
+  let profilePic = null;
+  const picPreview = document.getElementById('profile-pic-preview');
+  if (picPreview.style.display !== 'none') {
+    profilePic = picPreview.src;
+  }
+  
+  // Collect certificates
+  const certificates = [];
+  document.querySelectorAll('#certificate-preview img').forEach(img => {
+    certificates.push(img.src);
+  });
+  
+  return {
+    firstName: document.getElementById('first-name').value.trim(),
+    lastName: document.getElementById('last-name').value.trim(),
+    rollno: document.getElementById('rollno').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    summary: document.getElementById('summary').value.trim(),
+    hobbies: document.getElementById('hobbies').value.trim(),
+    languages,
+    techAreas,
+    skills: skillsList.filter(skill => skill.label.trim()),
+    projects,
+    interests: document.getElementById('interests').value.trim(),
+    sports: document.getElementById('sports').value.trim(),
+    achievements: document.getElementById('achievements').value.trim(),
+    whatsapp: document.getElementById('whatsapp').value.trim(),
+    profilePic,
+    certificates
+  };
+}
+
+function autoSummary(name, branch = "CSE", gradYear = "2027") {
+  return `${name} is a third-year ${branch} student graduating in ${gradYear}, passionate about technology, teamwork, and continuous learning.`;
+}
+
+function showForm() {
+  document.getElementById('profile').classList.remove('active');
+  document.getElementById('form-container').classList.add('active');
+  setupSkills();
+  setupProjects();
+}
+
+function showProfile(data) {
+  document.getElementById('form-container').classList.remove('active');
+  document.getElementById('profile').classList.add('active');
+  
+  // Fill profile data
+  fillFormFields(data);
+  displayProfile(data);
+}
+
+function fillFormFields(data) {
+  document.getElementById("first-name").value = data.firstName || "";
+  document.getElementById("last-name").value = data.lastName || "";
+  document.getElementById("rollno").value = data.rollno || "";
+  document.getElementById("email").value = data.email || "";
+  document.getElementById("summary").value = data.summary || "";
+  document.getElementById("hobbies").value = data.hobbies || "";
+  document.getElementById("interests").value = data.interests || "";
+  document.getElementById("achievements").value = data.achievements || "";
+  document.getElementById("sports").value = data.sports || "";
+  document.getElementById("whatsapp").value = data.whatsapp || "";
+  
+  // Set profile picture
+  if (data.profilePic) {
+    document.getElementById('profile-pic-preview').src = data.profilePic;
+    document.getElementById('profile-pic-preview').style.display = 'block';
+  }
+  
+  // Set checkboxes
+  document.querySelectorAll('#languagesbox input[type="checkbox"]').forEach(cb => {
+    cb.checked = data.languages && data.languages.includes(cb.value);
+  });
+  
+  document.querySelectorAll('#techbox input[type="checkbox"]').forEach(cb => {
+    cb.checked = data.techAreas && data.techAreas.includes(cb.value);
+  });
+  
+  // Set skills
+  if (data.skills) {
+    skillsList = [...data.skills];
+    renderSkills();
+  }
+  
+  // Set projects
+  if (data.projects) {
+    const projFold = document.getElementById('proj-fold');
+    projFold.innerHTML = '';
+    projectsData.length = 0;
+    
+    data.projects.forEach(proj => {
+      addProjectInput(proj.title, proj.desc, proj.stack, proj.link);
+    });
+    
+    if (data.projects.length === 0) {
+      addProjectInput();
+    }
+  }
+}
+
+function displayProfile(data) {
+  const fullName = `${data.firstName} ${data.lastName}`.trim();
+  const gradYear = new Date().getFullYear() + 2; // Assuming 2 years to graduation
+  
+  // Header
+  document.getElementById('display-name').textContent = fullName || 'Your Name';
+  document.getElementById('display-rollno').textContent = data.rollno ? `Roll ${data.rollno}` : 'Roll No';
+  document.getElementById('display-graduation').textContent = `CSE ${gradYear}`;
+  
+  const emailSpan = document.getElementById('display-email');
+  const emailSeparator = document.getElementById('email-separator');
+  if (data.email) {
+    emailSpan.textContent = data.email;
+    emailSeparator.style.display = 'inline';
+  } else {
+    emailSpan.textContent = '';
+    emailSeparator.style.display = 'none';
+  }
+  
+  // Summary
+  const summary = data.summary || autoSummary(fullName);
+  document.getElementById('display-quote').textContent = summary;
+  
+  // Profile picture
+  const displayPic = document.getElementById('display-pic');
+  if (data.profilePic) {
+    displayPic.src = data.profilePic;
+  } else {
+    displayPic.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Ccircle cx='120' cy='120' r='120' fill='%23f0f0f0'/%3E%3Ccircle cx='120' cy='90' r='35' fill='%23ccc'/%3E%3Cpath d='M60 180c0-33 27-60 60-60s60 27 60 60v40H60v-40z' fill='%23ccc'/%3E%3C/svg%3E";
+  }
+  
+  // Languages
+  const languagesDiv = document.getElementById('display-languages');
+  languagesDiv.innerHTML = '';
+  if (data.languages && data.languages.length > 0) {
+    data.languages.forEach(lang => {
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = lang;
+      languagesDiv.appendChild(badge);
+    });
+  } else {
+    languagesDiv.innerHTML = '<div class="badge">Select languages in the form</div>';
+  }
+  
+  // Tech areas
+  const techDiv = document.getElementById('display-tech');
+  techDiv.innerHTML = '';
+  if (data.techAreas && data.techAreas.length > 0) {
+    data.techAreas.forEach(tech => {
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = tech;
+      techDiv.appendChild(badge);
+    });
+  } else {
+    techDiv.innerHTML = '<div class="badge">Select technical areas in the form</div>';
+  }
+  
+  // Skills
+  const skillsDiv = document.getElementById('profile-skills');
+  skillsDiv.innerHTML = '';
+  if (data.skills && data.skills.length > 0) {
+    data.skills.forEach(skill => {
+      const row = document.createElement('div');
+      row.className = 'skill-row';
+      row.innerHTML = `
+        <div class="skill-label">${skill.label}</div>
+        <div class="skill-bar-bg">
+          <div class="skill-bar-fill" style="width: ${skill.val}%"></div>
+        </div>
+        <div class="skill-bar-val">${skill.val}%</div>
+      `;
+      skillsDiv.appendChild(row);
+    });
+  }
+  
+  // Projects
+  const projectsDiv = document.getElementById('profile-projects');
+  const projectCount = document.getElementById('profile-proj-count');
+  projectsDiv.innerHTML = '';
+  
+  if (data.projects && data.projects.length > 0) {
+    projectCount.textContent = `(${data.projects.length})`;
+    data.projects.forEach(project => {
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.innerHTML = `
+        <div class="project-title">${project.title}</div>
+        ${project.desc ? `<div class="project-desc">${project.desc}</div>` : ''}
+        ${project.stack ? `<div class="project-stack">Stack: ${project.stack}</div>` : ''}
+        ${project.link ? `<a href="${project.link}" class="project-link" target="_blank">View Project</a>` : ''}
+      `;
+      projectsDiv.appendChild(card);
+    });
+  } else {
+    projectCount.textContent = '';
+    projectsDiv.innerHTML = '<div class="project-card">No projects added yet</div>';
+  }
+  
+  // Hobbies
+  const hobbySection = document.getElementById('about-section');
+  if (data.hobbies && data.hobbies.trim()) {
+    document.getElementById('display-hobbies').textContent = data.hobbies;
+    hobbySection.style.display = 'block';
+  } else {
+    hobbySection.style.display = 'none';
+  }
+  
+  // Interests
+  const interestSection = document.getElementById('interest-section');
+  const interestsDiv = document.getElementById('display-interests');
+  if (data.interests && data.interests.trim()) {
+    interestsDiv.innerHTML = '';
+    data.interests.split(',').forEach(interest => {
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = interest.trim();
+      interestsDiv.appendChild(tag);
+    });
+    interestSection.style.display = 'block';
+  } else {
+    interestSection.style.display = 'none';
+  }
+  
+  // WhatsApp
+  const whatsappDiv = document.getElementById('display-whatsapp');
+  whatsappDiv.innerHTML = '';
+  if (data.whatsapp) {
+    data.whatsapp.split(',').forEach(number => {
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = number.trim();
+      whatsappDiv.appendChild(badge);
+    });
+  }
+  
+  // Sports
+  const sportsSection = document.getElementById('sports-section');
+  const sportsDiv = document.getElementById('display-sports');
+  if (data.sports && data.sports.trim()) {
+    sportsDiv.innerHTML = '';
+    data.sports.split(',').forEach(sport => {
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = sport.trim();
+      sportsDiv.appendChild(badge);
+    });
+    sportsSection.style.display = 'block';
+  } else {
+    sportsSection.style.display = 'none';
+  }
+  
+  // Achievements
+  const achieveSection = document.getElementById('achieve-section');
+  const achieveDiv = document.getElementById('display-achievements');
+  const certsDiv = document.getElementById('achievement-certificates');
+  
+  if ((data.achievements && data.achievements.trim()) || (data.certificates && data.certificates.length > 0)) {
+    achieveSection.style.display = 'block';
+    
+    if (data.achievements && data.achievements.trim()) {
+      achieveDiv.innerHTML = '';
+      data.achievements.split(',').forEach(achievement => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.textContent = achievement.trim();
+        achieveDiv.appendChild(tag);
+      });
+    }
+    
+    if (data.certificates && data.certificates.length > 0) {
+      certsDiv.innerHTML = '';
+      data.certificates.forEach(cert => {
+        const item = document.createElement('div');
+        item.className = 'cert-item';
+        item.innerHTML = `<img src="${cert}" alt="Certificate" />`;
+        certsDiv.appendChild(item);
+      });
+    }
+  } else {
+    achieveSection.style.display = 'none';
+  }
+}
+
+function handleEdit() {
+  showForm();
+}
+
+function handleDelete() {
+  if (confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+    localStorage.removeItem(storageKey);
+    showForm();
+    
+    // Reset form
+    document.getElementById('profile-form').reset();
+    document.getElementById('profile-pic-preview').style.display = 'none';
+    document.getElementById('certificate-preview').innerHTML = '';
+    setupSkills();
+    setupProjects();
+  }
+}
+
+let profileProjectsVisible = false;
+
+function toggleProfileProjects() {
+  profileProjectsVisible = !profileProjectsVisible;
+  const projectsDiv = document.getElementById('profile-projects');
+  const arrow = document.getElementById('profile-proj-arrow');
+  
+  projectsDiv.classList.toggle('project-hide', !profileProjectsVisible);
+  arrow.textContent = profileProjectsVisible ? "▲" : "▼";
+}
+
+function handleDownload() {
+  const element = document.getElementById('profile');
+  const opt = {
+    margin: 1,
+    filename: 'portfolio.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  
+  // Temporarily show all projects for PDF
+  const wasVisible = profileProjectsVisible;
+  if (!profileProjectsVisible) {
+    toggleProfileProjects();
+  }
+  
+  html2pdf().set(opt).from(element).save().then(() => {
+    // Restore previous state
+    if (!wasVisible) {
+      toggleProfileProjects();
+    }
+  });
+}
+
+// Add click effect to profile image
+document.addEventListener('DOMContentLoaded', () => {
+  const profileImg = document.getElementById('display-pic');
+  if (profileImg) {
+    profileImg.addEventListener('click', () => {
+      profileImg.classList.toggle('pop');
+      setTimeout(() => {
+        profileImg.classList.remove('pop');
+      }, 300);
+    });
+  }
+});
+
+// Auto-save functionality
+let autoSaveTimeout;
+document.addEventListener('input', (e) => {
+  if (e.target.closest('#form-container')) {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      const formData = collectFormData();
+      localStorage.setItem(storageKey + '_draft', JSON.stringify(formData));
+    }, 2000);
+  }
+});
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const draft = localStorage.getItem(storageKey + '_draft');
+  if (draft && !localStorage.getItem(storageKey)) {
+    try {
+      const draftData = JSON.parse(draft);
+      fillFormFields(draftData);
+    } catch(e) {
+      console.error('Error loading draft:', e);
+    }
+  }
+});
+
+</script>
+</body>
+</html>
