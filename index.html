@@ -787,7 +787,12 @@ body.theme-mint {
   }
 }
 
-/* Print Styles */
+@media print, pdf {
+  #profile {
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+}
 @media print {
   .profile-img-container {
     width: 240px !important;
