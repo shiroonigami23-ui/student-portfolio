@@ -1798,7 +1798,8 @@ document.getElementById('download-pdf').addEventListener('click', () => {
   // Hide buttons here
   if (editDeleteSection) editDeleteSection.classList.add('pdf-hide');
   if (downloadSection) downloadSection.classList.add('pdf-hide');
-
+void document.body.offsetHeight;
+lk
   setTimeout(() => {
     html2pdf()
       .set({ /* options */ })
