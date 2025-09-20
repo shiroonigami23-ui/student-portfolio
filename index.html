@@ -786,7 +786,26 @@ body.theme-mint {
     font-size: 13px;
   }
 }
-
+@media print, pdf {
+  #profile-skills .skill-row {
+    margin: 2px 0;
+    padding: 4px 0;
+    font-size: 0.75em;
+    line-height: 1.1;
+  }
+  #profile-skills .skill-bar-bg {
+    height: 8px;
+  }
+  #profile-skills .skill-label {
+    min-width: 60px;
+    max-width: 120px;
+    font-size: 0.85em;
+  }
+  #profile {
+    transform: scale(0.9);            /* For 90% A4 coverage */
+    transform-origin: top left;
+  }
+}
 @media print, pdf {
   #profile {
     transform: scale(0.9);
@@ -1713,11 +1732,11 @@ function toggleProfileProjects() {
 function handleDownload() {
   const element = document.getElementById('profile');
   const opt = {
-    margin: 1,
+    margin: 0.3,
     filename: 'portfolio.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    html2canvas: { scale: 3 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
   
   // Temporarily show all projects for PDF
@@ -1770,6 +1789,27 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error loading draft:', e);
     }
   }
+});
+document.getElementById('download-pdf').addEventListener('click', () => {
+  const element = document.getElementById('profile');
+  const editDeleteSection = element.querySelector('.profile-actions');
+  const downloadSection = element.querySelector('.download-section');
+
+  // Hide buttons here
+  if (editDeleteSection) editDeleteSection.classList.add('pdf-hide');
+  if (downloadSection) downloadSection.classList.add('pdf-hide');
+
+  setTimeout(() => {
+    html2pdf()
+      .set({ /* options */ })
+      .from(element)
+      .save()
+      .then(() => {
+        // Show buttons after PDF save
+        if (editDeleteSection) editDeleteSection.classList.remove('pdf-hide');
+        if (downloadSection) downloadSection.classList.remove('pdf-hide');
+      });
+  }, 150);
 });
 
 </script>
