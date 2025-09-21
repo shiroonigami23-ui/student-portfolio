@@ -22,6 +22,12 @@
   --section-band: #ffc174;
   --text: #222034;
 }
+.project-hide {
+  display: none;
+}
+.pdf-hide {
+  display: none !important;
+}
 body {
   font-family: 'Poppins', sans-serif; 
   background: var(--bg); 
@@ -460,9 +466,6 @@ button.action-delete:hover {
   color:#fff;
 }
 
-.project-hide {
-  display: none;
-}
 
 .project-card {
   background:#f2faf8;
@@ -838,9 +841,7 @@ body.theme-mint {
   }
 }
 
-.pdf-hide {
-  display: none !important;
-}
+
 
 /* Additional utility classes */
 .text-center {
@@ -1731,6 +1732,7 @@ function toggleProfileProjects() {
 
 function handleDownload() {
   const element = document.getElementById('profile');
+  const controls = document.querySelectorAll('.profile-actions, .download-section, .theme-switch');
   const opt = {
     margin: 0.3,
     filename: 'portfolio.pdf',
@@ -1738,18 +1740,29 @@ function handleDownload() {
     html2canvas: { scale: 3 },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
-  
+
   // Temporarily show all projects for PDF
   const wasVisible = profileProjectsVisible;
   if (!profileProjectsVisible) {
     toggleProfileProjects();
   }
-  
-  html2pdf().set(opt).from(element).save().then(() => {
-    // Restore previous state
-    if (!wasVisible) {
-      toggleProfileProjects();
-    }
+
+  // Hide controls for PDF output
+  controls.forEach(el => el.classList.add('pdf-hide'));
+  element.classList.add('pdf-export'); // For forced width/layout if needed
+
+  window.requestAnimationFrame(() => {
+    setTimeout(() => {
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Show controls after PDF save
+        controls.forEach(el => el.classList.remove('pdf-hide'));
+        element.classList.remove('pdf-export');
+        // Restore project visibility after PDF save
+        if (!wasVisible) {
+          toggleProfileProjects();
+        }
+      });
+    }, 100);
   });
 }
 
