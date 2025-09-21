@@ -727,7 +727,18 @@ body.theme-mint {
   --badge-bg: #c7fcee;
   --badge-text: #1fbe84;
 }
+.pdf-export #profile {
+  width: 100% !important;
+  max-width: 7.5in !important; /* 8.27in minus approx 0.4in total margin */
+  margin: 0 auto !important;
+}
 
+.pdf-export .skill-row {
+  margin: 2px 0 !important;
+  padding: 2px 0 !important;
+  gap: 4px !important;
+}
+  
 /* Responsive Design */
 @media (max-width: 900px) {
   #form-container,#profile{
@@ -1804,21 +1815,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 document.getElementById('download-pdf').addEventListener('click', () => {
-  const element = document.getElementById('profile');
-  document.querySelectorAll('.profile-actions, .download-section, .theme-switch').forEach(el => el.classList.add('pdf-hide'));
-  window.requestAnimationFrame(() => {
-    setTimeout(() => {
-      html2pdf()
-        .set({ /* options */ })
-        .from(element)
-        .save()
-        .then(() => {
-          document.querySelectorAll('.profile-actions, .download-section, .theme-switch').forEach(el => el.classList.remove('pdf-hide'));
-        });
-    }, 100);
-  });
-});
+  const profile = document.getElementById('profile');
+  const controls = document.querySelectorAll('.profile-actions, .download-section, .theme-switch');
 
+  controls.forEach(el => el.classList.add('pdf-hide'));
+  profile.classList.add('pdf-export');
+
+  setTimeout(() => {
+    html2pdf().set({
+      margin: 0.3,
+      filename: 'portfolio.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 3 },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).from(profile).save().then(() => {
+      controls.forEach(el => el.classList.remove('pdf-hide'));
+      profile.classList.remove('pdf-export');
+    });
+  }, 100);
+});
 </script>
 </body>
 </html>
