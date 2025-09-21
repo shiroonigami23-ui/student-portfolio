@@ -932,7 +932,7 @@ body.theme-mint {
     <label for="hobbies">Hobbies:</label>
     <textarea id="hobbies" placeholder="Chess, reading, coding"></textarea>
     
-    <label>Programming Languages Known:</label>
+    <label>Programming Languages you Know:</label>
     <div class="checkbox-row" id="languagesbox">
       <label class="checkbox-label"><input type="checkbox" value="C" />C</label>
       <label class="checkbox-label"><input type="checkbox" value="C++" />C++</label>
@@ -979,7 +979,7 @@ body.theme-mint {
     <label for="achievements">Achievements:</label>
     <input type="text" id="achievements" placeholder="Hackathon winner; Internship at TCS" />
     
-    <label for="whatsapp">WhatsApp No(s) (comma separated)<span style="color:#d00;">*</span>:</label>
+    <label for="whatsapp">WhatsApp No(s)<span style="color:#d00;">*</span>:</label>
     <input type="text" id="whatsapp" required pattern="^(\d{10})(,\s*\d{10})*$" placeholder="9876543210,9123456780" />
     <div class="error-message" id="whatsapp-error">Please enter valid 10-digit WhatsApp numbers</div>
     
@@ -991,7 +991,7 @@ body.theme-mint {
     <input type="file" id="profile-pic" accept="image/*" />
     <img id="profile-pic-preview" style="max-width:180px;display:none;margin-top:10px;border-radius:10px;" alt="Profile Picture Preview" />
     
-    <button type="submit">Generate Portfolio</button>
+    <button type="submit">Generate My Portfolio</button>
   </form>
 </div>
 
@@ -1064,6 +1064,7 @@ body.theme-mint {
   <div class="section">
     <div class="section-title"><i>📞</i>Contact</div>
     <div class="badges" id="display-whatsapp"></div>
+    <div id="display-email" class="contact-email"></div>
     <div class="section-band"></div>
   </div>
   
@@ -1552,6 +1553,7 @@ function displayProfile(data) {
   document.getElementById('display-rollno').textContent = data.rollno ? `Roll ${data.rollno}` : 'Roll No';
   document.getElementById('display-graduation').textContent = `CSE ${gradYear}`;
   
+  /*
   const emailSpan = document.getElementById('display-email');
   const emailSeparator = document.getElementById('email-separator');
   if (data.email) {
@@ -1561,7 +1563,7 @@ function displayProfile(data) {
     emailSpan.textContent = '';
     emailSeparator.style.display = 'none';
   }
-  
+  */
   // Summary
   const summary = data.summary || autoSummary(fullName);
   document.getElementById('display-quote').textContent = summary;
@@ -1679,8 +1681,26 @@ function displayProfile(data) {
       whatsappDiv.appendChild(badge);
     });
   }
-  
+  // WhatsApp
+  ...
+
   // Sports
+  ...
+
+  // Email
+  const emailDiv = document.getElementById('display-email');
+  emailDiv.innerHTML = '';
+  if (data.email) {
+    const badge = document.createElement('div');
+    badge.className = 'badge';
+    const a = document.createElement('a');
+    a.href = "mailto:" + data.email.trim();
+    a.textContent = data.email.trim();
+    badge.appendChild(a);
+    emailDiv.appendChild(badge);
+  }
+});
+  
   const sportsSection = document.getElementById('sports-section');
   const sportsDiv = document.getElementById('display-sports');
   if (data.sports && data.sports.trim()) {
