@@ -1792,25 +1792,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 document.getElementById('download-pdf').addEventListener('click', () => {
   const element = document.getElementById('profile');
-  const editDeleteSection = element.querySelector('.profile-actions');
-  const downloadSection = element.querySelector('.download-section');
-
-  // Hide buttons here
-  if (editDeleteSection) editDeleteSection.classList.add('pdf-hide');
-  if (downloadSection) downloadSection.classList.add('pdf-hide');
-void document.body.offsetHeight;
-lk
-  setTimeout(() => {
-    html2pdf()
-      .set({ /* options */ })
-      .from(element)
-      .save()
-      .then(() => {
-        // Show buttons after PDF save
-        if (editDeleteSection) editDeleteSection.classList.remove('pdf-hide');
-        if (downloadSection) downloadSection.classList.remove('pdf-hide');
-      });
-  }, 450);
+  document.querySelectorAll('.profile-actions, .download-section, .theme-switch').forEach(el => el.classList.add('pdf-hide'));
+  window.requestAnimationFrame(() => {
+    setTimeout(() => {
+      html2pdf()
+        .set({ /* options */ })
+        .from(element)
+        .save()
+        .then(() => {
+          document.querySelectorAll('.profile-actions, .download-section, .theme-switch').forEach(el => el.classList.remove('pdf-hide'));
+        });
+    }, 100);
+  });
 });
 
 </script>
