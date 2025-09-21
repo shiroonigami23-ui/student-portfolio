@@ -1064,7 +1064,7 @@ body.theme-mint {
   <div class="section">
     <div class="section-title"><i>📞</i>Contact</div>
     <div class="badges" id="display-whatsapp"></div>
-    <div id="display-email" class="contact-email"></div>
+    <div class="badges" id="display-email" ></div>
     <div class="section-band"></div>
   </div>
   
@@ -1689,16 +1689,11 @@ function displayProfile(data) {
 
   // Email
   const emailDiv = document.getElementById('display-email');
-  emailDiv.innerHTML = '';
-  if (data.email) {
-    const badge = document.createElement('div');
-    badge.className = 'badge';
-    const a = document.createElement('a');
-    a.href = "mailto:" + data.email.trim();
-    a.textContent = data.email.trim();
-    badge.appendChild(a);
-    emailDiv.appendChild(badge);
-  });
+if (emailDiv && data.email) {
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.innerHTML = `<a href="mailto:${data.email.trim()}">${data.email.trim()}</a>`;
+  emailDiv.appendChild(badge);
 }
   const sportsSection = document.getElementById('sports-section');
   const sportsDiv = document.getElementById('display-sports');
