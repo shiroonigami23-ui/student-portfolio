@@ -28,6 +28,13 @@
 .pdf-hide {
   display: none !important;
 }
+.pdf-export .skill-percent {
+  white-space: nowrap;
+  font-size: 0.9em;
+  color: #666;
+  min-width: 40px;
+  text-align: right;
+}
 body {
   font-family: 'Poppins', sans-serif; 
   background: var(--bg); 
@@ -736,10 +743,9 @@ body.theme-mint {
 .pdf-export .skill-row {
   margin: 2px 0 !important;
   padding: 2px 0 !important;
-  gap: 4px !important;
+  gap: 2px !important;
 }
-  
-/* Responsive Design */
+
 @media (max-width: 900px) {
   #form-container,#profile{
     max-width:99vw;
@@ -756,9 +762,10 @@ body.theme-mint {
     height:5px;
   }
   .skill-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* To push % to right */
+  gap: 8px; /* Adjust space between name and bar */
   }
   .skill-label {
     min-width: auto;
@@ -946,6 +953,10 @@ body.theme-mint {
     
     <label>Skills & Proficiency:</label>
     <div id="skills-area"></div>
+    <div class="skill-row">
+  <span class="skill-name">Creative</span>
+  <span class="skill-percent">75%</span>
+    </div>
     <button type="button" class="add-skill-btn" onclick="addSkillInput()">+ Add Skill</button>
     
     <label class="project-toggle" onclick="toggleProjects()">
