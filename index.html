@@ -1698,9 +1698,8 @@ function displayProfile(data) {
     a.textContent = data.email.trim();
     badge.appendChild(a);
     emailDiv.appendChild(badge);
-  }
-});
-  
+  });
+}
   const sportsSection = document.getElementById('sports-section');
   const sportsDiv = document.getElementById('display-sports');
   if (data.sports && data.sports.trim()) {
