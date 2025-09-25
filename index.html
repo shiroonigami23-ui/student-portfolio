@@ -1179,16 +1179,7 @@ otherCheckbox.addEventListener('change', () => {
     otherTextInput.value = '';
   }
 });
-  const otherCheckbox = document.getElementById('technical field-other-checkbox');
-const otherTextInput = document.getElementById('technical field-other-text');
-otherCheckbox.addEventListener('change', () => {
-  if (otherCheckbox.checked) {
-    otherTextInput.style.display = 'block';
-  } else {
-    otherTextInput.style.display = 'none';
-    otherTextInput.value = '';
-  }
-});
+  
 function setupInputValidation() {
   const inputs = {
     'first-name': validateRequired,
