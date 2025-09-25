@@ -950,6 +950,10 @@ body.theme-mint {
       <label class="checkbox-label"><input type="checkbox" value="Database" />Database</label>
       <label class="checkbox-label"><input type="checkbox" value="System Programming" />System Programming</label>
       <label class="checkbox-label"><input type="checkbox" value="Other" />Other</label>
+      <label class="checkbox-label">
+  <input type="checkbox" value="Other" id="language-other-checkbox"> Other
+</label>
+<input type="text" id="language-other-text" placeholder="Write language here" style="display:none; width:100%; margin-top:5px;">
     </div>
     
     <label>Skills & Proficiency:</label>
@@ -1164,7 +1168,16 @@ function setupEventListeners() {
   // Input validation
   setupInputValidation();
 }
-
+const otherCheckbox = document.getElementById('language-other-checkbox');
+const otherTextInput = document.getElementById('language-other-text');
+otherCheckbox.addEventListener('change', () => {
+  if (otherCheckbox.checked) {
+    otherTextInput.style.display = 'block';
+  } else {
+    otherTextInput.style.display = 'none';
+    otherTextInput.value = '';
+  }
+});
 function setupInputValidation() {
   const inputs = {
     'first-name': validateRequired,
@@ -1426,11 +1439,20 @@ function collectFormData() {
   });
   
   // Collect languages
-  const languages = [];
-  document.querySelectorAll('#languagesbox input[type="checkbox"]:checked').forEach(cb => {
-    languages.push(cb.value);
-  });
   
+  const languages = [];
+const otherTextInput = document.getElementById('language-other-text'); // add this to get the Other text input element
+
+document.querySelectorAll('#languagesbox input[type="checkbox"]').forEach(cb => {
+  if (cb.checked) {
+    if(cb.value === "Other"){
+      const otherLang = otherTextInput.value.trim();
+      if(otherLang) languages.push(otherLang);
+    } else {
+      languages.push(cb.value);
+    }
+  }
+});
   // Collect tech areas
   const techAreas = [];
   document.querySelectorAll('#techbox input[type="checkbox"]:checked').forEach(cb => {
