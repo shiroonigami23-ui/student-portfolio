@@ -41,6 +41,7 @@ async function init() {
             await handleUserLoggedIn(user);
         } else {
             // 4. Firebase has confirmed NO user is logged in.
+            //    The view is already correctly set to 'login-view'.
             handleUserLoggedOut();
         }
     });
@@ -88,8 +89,10 @@ function setupAllEventListeners() {
     document.getElementById('header-actions').addEventListener('change', headerChangeHandler);
     // Handles all clicks within the Share Modal
     document.getElementById('share-modal-overlay').addEventListener('click', shareModalClickHandler);
+    
     // --- THE DEFINITIVE FIX FOR THE AI MODAL ---
-    // Handles all clicks within the AI Modal
+    // A separate, dedicated event listener for the AI modal overlay, which
+    // is outside of the #main-content element.
     document.getElementById('ai-modal-overlay').addEventListener('click', aiModalClickHandler);
 }
 
@@ -174,7 +177,7 @@ async function aiModalClickHandler(e) {
     if (!button) return;
     const { action } = button.dataset;
     const activeTextarea = UI.getActiveAiTextarea();
-    if (!activeTextarea) return;
+    if (!activeTextarea && action !== 'close') return;
 
     if (action === 'improve' || action === 'bullets') {
         UI.setAiModalState('loading');
@@ -218,6 +221,7 @@ async function handleSavePortfolio() {
         }
         navigateTo('dashboard');
     } catch (error) {
+        console.error("Save Error:", error);
         showAlert("Save Error", "Could not save portfolio.");
     }
 }
@@ -229,6 +233,7 @@ async function handleDelete(id) {
         navigateTo('dashboard');
         showToast("Portfolio deleted.");
     } catch (error) {
+        console.error("Delete Error:", error);
         showAlert("Delete Error", "Could not delete portfolio.");
     }
 }
@@ -243,11 +248,16 @@ function handleImport() {
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
-                await Storage.addPortfolio(currentUser.uid, data);
-                navigateTo('dashboard');
-                showToast("Portfolio imported!", 'success');
+                // Basic validation to ensure it looks like a portfolio
+                if (data.portfolioTitle && data.firstName) {
+                    await Storage.addPortfolio(currentUser.uid, data);
+                    navigateTo('dashboard');
+                    showToast("Portfolio imported!", 'success');
+                } else {
+                    showAlert("Import Failed", "The selected file does not appear to be a valid portfolio.");
+                }
             } catch (error) {
-                showAlert("Import Failed", "Invalid portfolio file.");
+                showAlert("Import Failed", "Invalid portfolio file. Could not parse JSON.");
             }
         };
         reader.readAsText(file);
