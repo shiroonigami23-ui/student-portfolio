@@ -15,45 +15,42 @@ function init() {
 
 function setupEventListeners() {
     document.getElementById('header-actions').addEventListener('click', async (e) => {
-        if (e.target.id === 'back-to-dashboard-btn') {
-            await navigateTo('dashboard');
-        }
-        if (e.target.id === 'preview-portfolio-btn') {
-            const data = Editor.collectFormData();
-            await navigateTo('preview', data);
-        }
-        if (e.target.id === 'download-pdf-btn') {
-            UI.downloadAsPDF();
-        }
+        if (e.target.id === 'back-to-dashboard-btn') await navigateTo('dashboard');
+        if (e.target.id === 'preview-portfolio-btn') await navigateTo('preview', Editor.collectFormData());
+        if (e.target.id === 'download-pdf-btn') UI.downloadAsPDF();
     });
 
     document.getElementById('dashboard-view').addEventListener('click', async (e) => {
-        if (e.target.id === 'create-new-btn') {
-            currentlyEditingId = null;
-            Editor.resetForm();
-            await navigateTo('editor');
-        }
         const target = e.target.closest('button');
         if (!target) return;
         
-        const action = target.dataset.action;
-        const id = target.dataset.id;
-
-        if (action === 'edit') {
-            currentlyEditingId = id;
-            const portfolio = Storage.getPortfolioById(currentlyEditingId);
-            Editor.populateForm(portfolio);
+        if (target.id === 'create-new-btn') {
+            currentlyEditingId = null;
+            Editor.resetForm();
             await navigateTo('editor');
-        }
-        if (action === 'delete') {
-            if (confirm('Are you sure you want to delete this portfolio?')) {
-                Storage.deletePortfolio(id);
-                UI.renderDashboard(Storage.getPortfolios());
-            }
-        }
-        if (action === 'preview') {
+        } else if (target.id === 'import-portfolio-btn') {
+            handleImport();
+        } else {
+            const action = target.dataset.action;
+            const id = target.dataset.id;
+            if (!action || !id) return;
+
             const portfolio = Storage.getPortfolioById(id);
-            await navigateTo('preview', portfolio);
+            if (!portfolio) return;
+
+            if (action === 'edit') {
+                currentlyEditingId = id;
+                Editor.populateForm(portfolio);
+                await navigateTo('editor');
+            }
+            if (action === 'delete') {
+                if (confirm('Are you sure you want to delete this portfolio?')) {
+                    Storage.deletePortfolio(id);
+                    UI.renderDashboard(Storage.getPortfolios());
+                }
+            }
+            if (action === 'preview') await navigateTo('preview', portfolio);
+            if (action === 'export') handleExport(portfolio);
         }
     });
 
@@ -68,9 +65,7 @@ function setupEventListeners() {
             }
             await navigateTo('dashboard');
         }
-        if (e.target.id === 'cancel-edit-btn') {
-            await navigateTo('dashboard');
-        }
+        if (e.target.id === 'cancel-edit-btn') await navigateTo('dashboard');
     });
 
     document.getElementById('header-actions').addEventListener('change', e => {
@@ -80,6 +75,46 @@ function setupEventListeners() {
             Storage.saveTheme(newTheme);
         }
     });
+}
+
+function handleExport(portfolio) {
+    const dataStr = JSON.stringify(portfolio, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const title = portfolio.portfolioTitle?.toLowerCase().replace(/\s+/g, '-') || 'portfolio';
+    a.href = url;
+    a.download = `${title}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function handleImport() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                // Basic validation
+                if (importedData.portfolioTitle && importedData.firstName) {
+                    Storage.addPortfolio(importedData);
+                    UI.renderDashboard(Storage.getPortfolios());
+                } else {
+                    alert('Invalid portfolio file.');
+                }
+            } catch (error) {
+                alert('Could not parse the file. Please make sure it is a valid portfolio JSON.');
+                console.error("Import error:", error);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
 }
 
 async function navigateTo(view, data = null) {
@@ -96,7 +131,7 @@ async function navigateTo(view, data = null) {
             UI.showView('editor-view');
             break;
         case 'preview':
-            await UI.renderPortfolioPreview(data); // Await the async rendering
+            await UI.renderPortfolioPreview(data);
             UI.showView('preview-view');
             break;
     }
