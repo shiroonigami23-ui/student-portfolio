@@ -56,7 +56,7 @@ async function handlePublicView(portfolioId) {
 }
 
 async function handleUserLoggedIn(user) {
-    UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
+    // The initial theme is set by the first call to navigateTo
     navigateTo('dashboard');
 }
 
@@ -246,6 +246,14 @@ function handleImport() {
 
 async function navigateTo(view, data = null) {
     UI.updateHeader(view, currentUser);
+
+    // Apply the correct theme based on the view
+    if (view === 'preview' && data && data.theme) {
+        UI.applyTheme(data.theme);
+    } else {
+        UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
+    }
+
     switch (view) {
         case 'dashboard':
             portfoliosCache = await Storage.getPortfolios(currentUser.uid);
