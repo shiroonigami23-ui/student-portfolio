@@ -2,6 +2,8 @@ import * as UI from './ui.js';
 import * as Editor from './editor.js';
 import * as Storage from './storage.js';
 import { showConfirmation, showAlert } from './modal.js';
+import { showToast } from './notifications.js';
+import { validatePortfolioData } from './validator.js';
 
 let currentView = 'dashboard';
 let currentlyEditingId = null;
@@ -9,6 +11,7 @@ let currentlyEditingId = null;
 function init() {
     UI.populateThemes(Storage.getTheme());
     UI.applyTheme(Storage.getTheme());
+    Editor.setupLiveValidation();
     setupEventListeners();
     UI.renderDashboard(Storage.getPortfolios());
     UI.showView('dashboard-view');
@@ -51,6 +54,7 @@ function setupEventListeners() {
                     () => {
                         Storage.deletePortfolio(id);
                         UI.renderDashboard(Storage.getPortfolios());
+                        showToast('Portfolio deleted.', 'info');
                     }
                 );
             }
@@ -62,11 +66,20 @@ function setupEventListeners() {
     document.getElementById('editor-view').addEventListener('click', async (e) => {
         if (e.target.id === 'save-portfolio-btn') {
             const data = Editor.collectFormData();
+            const validationResult = validatePortfolioData(data);
+
+            if (!validationResult.isValid) {
+                showAlert('Validation Error', 'Please fix the following issues:\n\n' + validationResult.errors.join('\n'));
+                return;
+            }
+
             if (currentlyEditingId) {
                 data.id = currentlyEditingId;
                 Storage.updatePortfolio(data);
+                showToast('Portfolio updated successfully!', 'success');
             } else {
                 Storage.addPortfolio(data);
+                showToast('Portfolio created successfully!', 'success');
             }
             await navigateTo('dashboard');
         }
@@ -105,11 +118,10 @@ function handleImport() {
         reader.onload = e => {
             try {
                 const importedData = JSON.parse(e.target.result);
-                // Basic validation
                 if (importedData.portfolioTitle && importedData.firstName) {
                     Storage.addPortfolio(importedData);
                     UI.renderDashboard(Storage.getPortfolios());
-                    showAlert('Success', 'Portfolio imported successfully!');
+                    showToast('Portfolio imported successfully!', 'success');
                 } else {
                     showAlert('Import Error', 'The selected file is not a valid portfolio.');
                 }
@@ -118,7 +130,7 @@ function handleImport() {
                 console.error("Import error:", error);
             }
         };
-        reader.readText(file);
+        reader.readAsText(file);
     };
     input.click();
 }
