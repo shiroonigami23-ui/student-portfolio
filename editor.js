@@ -11,7 +11,7 @@ export function init() {
     profilePicPreview = document.getElementById('profile-pic-preview');
     removePicBtn = document.getElementById('remove-pic-btn');
 
-    // THE FIX: This now looks for the unique ID in the editor form.
+    // This correctly populates the theme dropdown inside the editor form
     const editorThemeSelect = document.getElementById('editor-theme-select');
     if (editorThemeSelect) {
         editorThemeSelect.innerHTML = Object.entries(THEMES)
