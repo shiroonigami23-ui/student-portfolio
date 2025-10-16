@@ -1,6 +1,5 @@
 import { THEMES } from './config.js';
 
-// --- DOM Element Cache ---
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
@@ -13,16 +12,15 @@ export const showdownConverter = new showdown.Converter({
     tables: true,
 });
 
-// --- View Management ---
 export function showView(viewId) {
-    // --- MAJOR FIX ---
-    // This function is now more "brute force" to prevent race conditions.
-    // First, it explicitly hides ALL views.
+    // --- THE DEFINITIVE FIX FOR VIEW SWITCHING ---
+    // 1. Explicitly hide ALL views first. This prevents any possibility
+    //    of two views being active at the same time.
     mainContent.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
 
-    // Then, it explicitly shows ONLY the target view.
+    // 2. Then, explicitly show ONLY the one view we want.
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
@@ -32,14 +30,9 @@ export function showView(viewId) {
 }
 
 export function updateHeader(view, user) {
-    headerActions.innerHTML = ''; // Clear previous state
-
+    headerActions.innerHTML = '';
     if (user) {
-        const themeSelectHTML = `
-            <select id="theme-select" title="Change Theme">
-                ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
-            </select>`;
-
+        const themeSelectHTML = `<select id="theme-select" title="Change Theme">${Object.entries(THEMES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>`;
         let buttonsHTML = '';
         if (view === 'editor' || view === 'preview') {
             buttonsHTML = `<button id="back-to-dashboard-btn">Dashboard</button>`;
@@ -47,7 +40,6 @@ export function updateHeader(view, user) {
         if (view === 'preview') {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         }
-
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
@@ -55,7 +47,6 @@ export function updateHeader(view, user) {
                 <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar" referrerpolicy="no-referrer">
                 <button id="logout-btn">Logout</button>
             </div>`;
-        
         const themeSelectElement = document.getElementById('theme-select');
         if (themeSelectElement) {
             themeSelectElement.value = localStorage.getItem('theme') || 'theme-space';
@@ -81,17 +72,13 @@ export function renderDashboard(portfolios) {
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
                 <button data-action="delete" data-id="${p.id}" class="delete-btn">Delete</button>
             </div>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
-
-// --- Portfolio Rendering ---
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
     try {
-        // Corrected path for templates
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
@@ -107,12 +94,10 @@ export function downloadAsPDF() {
     html2pdf().from(content).set(opt).save();
 }
 
-// --- Theming ---
 export function applyTheme(themeName) {
     document.body.className = themeName || 'theme-space';
 }
 
-// --- AI Modal ---
 export function showAiModal(textareaElement) {
     activeAiTextarea = textareaElement;
     setAiModalState('options');
@@ -143,7 +128,6 @@ export function setAiModalState(state, text = '') {
     }
 }
 
-// --- Share Modal ---
 export function showShareModal(portfolioId, isPublic) {
     const shareLinkInput = document.getElementById('share-link-input');
     const shareModalActions = document.getElementById('share-modal-actions');
@@ -151,7 +135,6 @@ export function showShareModal(portfolioId, isPublic) {
     const link = `${window.location.origin}${window.location.pathname}?id=${portfolioId}`;
     shareLinkInput.value = link;
     shareLinkInput.style.display = isPublic ? 'block' : 'none';
-
     if (isPublic) {
         modalTitle.textContent = "Your Portfolio is Public";
         shareModalActions.innerHTML = `<button id="copy-link-btn" class="primary-btn">Copy Link</button><button id="make-private-btn">Make Private</button><button id="close-share-btn">Close</button>`;
