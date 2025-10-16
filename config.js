@@ -6,4 +6,5 @@ export const THEMES = {
     'theme-forest': 'Forest',
     'theme-ocean': 'Ocean',
     'theme-mint': 'Mint',
+    'theme-mint': 'Sunset',
 };
