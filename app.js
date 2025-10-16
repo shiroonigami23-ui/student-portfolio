@@ -7,19 +7,27 @@ import * as Storage from './storage.js';
 import { showAlert, showConfirmation } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
-// FIXED: Changed 'improveWithAI' to 'improveWriting' to match the function exported from ai.js
 import { improveWriting, generateBulletPoints } from './ai.js';
-
 
 // --- STATE ---
 let currentUser = null;
-let currentlyEditingId = null;
+let currentlyEditingId = null; // Used for context in modals (delete, share)
 let portfoliosCache = [];
 
-
 // --- INITIALIZATION ---
-function init() {
-    Editor.init(); // CRITICAL: Initialize the editor module first
+async function init() {
+    // Check for a public portfolio ID in the URL first
+    const urlParams = new URLSearchParams(window.location.search);
+    const publicId = urlParams.get('id');
+
+    if (publicId) {
+        // If an ID exists, the app's only job is to show the public portfolio.
+        await handlePublicView(publicId);
+        return; // Stop further app execution
+    }
+
+    // If no public ID, proceed with the normal authenticated app flow
+    Editor.init();
     Editor.setupLiveValidation();
 
     onAuthStateChanged(auth, (user) => {
@@ -33,6 +41,32 @@ function init() {
     setupEventListeners();
 }
 
+/**
+ * Handles displaying a public portfolio. This function replaces the entire app
+ * view with just the portfolio preview.
+ * @param {string} portfolioId The ID from the URL.
+ */
+async function handlePublicView(portfolioId) {
+    const portfolioData = await Storage.getPublicPortfolioById(portfolioId);
+    const appContainer = document.getElementById('app-container');
+    
+    // Clear the standard app header
+    document.getElementById('app-header').innerHTML = '';
+
+    if (portfolioData) {
+        // Replace the main content with only the preview view
+        appContainer.innerHTML = `
+            <main id="main-content">
+                <div id="preview-view" class="view active">
+                    <div id="portfolio-preview-content"></div>
+                </div>
+            </main>`;
+        UI.applyTheme(portfolioData.theme || 'theme-space');
+        await UI.renderPortfolioPreview(portfolioData);
+    } else {
+        appContainer.innerHTML = `<p class="error-message">Sorry, the requested portfolio could not be found or is no longer public.</p>`;
+    }
+}
 
 // --- AUTHENTICATION HANDLERS ---
 async function handleUserLoggedIn(user) {
@@ -43,7 +77,6 @@ async function handleUserLoggedIn(user) {
 function handleUserLoggedOut() {
     portfoliosCache = [];
     currentlyEditingId = null;
-    // Pass null for user to correctly update header for logged-out state
     UI.updateHeader('login', null);
     UI.showView('login-view');
 }
@@ -52,10 +85,10 @@ async function handleGoogleSignIn() {
     const provider = new GoogleAuthProvider();
     try {
         await signInWithPopup(auth, provider);
-        // onAuthStateChanged will handle the rest
+        // onAuthStateChanged handles the rest
     } catch (error) {
         console.error("Google Sign-In Error:", error);
-        showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
+        showAlert("Sign-In Failed", `An error occurred: ${error.message}`);
     }
 }
 
@@ -67,10 +100,9 @@ async function handleLogout() {
     }
 }
 
-
 // --- EVENT LISTENERS ---
 function setupEventListeners() {
-
+    // Main content actions (dashboard buttons, save, cancel, etc.)
     document.getElementById('main-content').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -87,16 +119,24 @@ function setupEventListeners() {
         if (action && dataId) {
             switch (action) {
                 case 'edit': return navigateToEditor(dataId);
-                case 'delete': return showConfirmation("Delete Portfolio?", "This action is permanent.", () => handleDelete(dataId));
+                case 'delete': return showConfirmation("Delete Portfolio?", "This action is permanent and cannot be undone.", () => handleDelete(dataId));
                 case 'preview':
-                    const portfolio = portfoliosCache.find(p => p.id === dataId);
-                    if(portfolio) navigateTo('preview', portfolio);
+                    const portfolioToPreview = portfoliosCache.find(p => p.id === dataId);
+                    if (portfolioToPreview) navigateTo('preview', portfolioToPreview);
                     break;
                 case 'export': return handleExport(dataId);
+                case 'share':
+                    const portfolioToShare = portfoliosCache.find(p => p.id === dataId);
+                    if (portfolioToShare) {
+                        currentlyEditingId = dataId; // Set context for modal
+                        UI.showShareModal(dataId, portfolioToShare.isPublic);
+                    }
+                    break;
             }
         }
     });
 
+    // Header actions (logout, back to dashboard)
     document.getElementById('header-actions').addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -104,8 +144,8 @@ function setupEventListeners() {
         if (button.id === 'back-to-dashboard-btn') navigateTo('dashboard');
         if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
     });
-
-    // Use 'change' event for select dropdown
+    
+    // Header theme selector
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
@@ -114,52 +154,50 @@ function setupEventListeners() {
         }
     });
 
-    // AI Modal Actions
-    let activeTextarea = null;
+    // AI Modal listener
     document.getElementById('editor-view').addEventListener('click', (e) => {
-        const button = e.target.closest('button');
-        if (button && button.classList.contains('ai-assist-btn')) {
-            activeTextarea = button.closest('.textarea-wrapper').querySelector('textarea');
-            UI.setAiModalState('options');
-            UI.showAiModal();
+        const button = e.target.closest('button.ai-assist-btn');
+        if (button) {
+            const activeTextarea = button.closest('.textarea-wrapper').querySelector('textarea');
+            UI.showAiModal(activeTextarea);
         }
     });
-
-    document.getElementById('ai-modal-overlay').addEventListener('click', async (e) => {
+    
+    // Share Modal listener
+    document.getElementById('share-modal-overlay').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
 
-        const action = button.dataset.action;
-        if (!action) return;
+        const portfolio = portfoliosCache.find(p => p.id === currentlyEditingId);
+        if (!portfolio && button.id !== 'close-share-btn') return;
 
-        const originalText = activeTextarea ? activeTextarea.value : '';
-
-        if (action === 'improve' || action === 'bullets') {
-            UI.setAiModalState('loading');
-            try {
-                // FIXED: Changed 'improveWithAI' to 'improveWriting'
-                const newText = action === 'improve'
-                    ? await improveWriting(originalText)
-                    : await generateBulletPoints(originalText);
-                UI.setAiModalState('result', newText);
-            } catch (error) {
-                showAlert("AI Error", error.message);
-                UI.setAiModalState('options');
-            }
-        } else if (action === 'use-text') {
-            if (activeTextarea) {
-                activeTextarea.value = document.getElementById('ai-result-textarea').value;
-                activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            UI.hideAiModal();
-        } else if (action === 'close') {
-            // This handles both cancel and back buttons
-            UI.setAiModalState('options'); // Go back to options view
-            UI.hideAiModal(); // Hide the whole modal
+        switch (button.id) {
+            case 'make-public-btn':
+                await Storage.makePortfolioPublic(currentlyEditingId, portfolio);
+                showToast('Portfolio is now public!', 'success');
+                navigateTo('dashboard'); // Refresh to show new state
+                UI.hideShareModal();
+                break;
+            case 'make-private-btn':
+                await Storage.makePortfolioPrivate(currentlyEditingId);
+                showToast('Portfolio is now private.');
+                navigateTo('dashboard');
+                UI.hideShareModal();
+                break;
+            case 'copy-link-btn':
+                const linkInput = document.getElementById('share-link-input');
+                navigator.clipboard.writeText(linkInput.value).then(() => {
+                    showToast('Link copied to clipboard!');
+                }, () => {
+                    showToast('Failed to copy link.', 'error');
+                });
+                break;
+            case 'close-share-btn':
+                UI.hideShareModal();
+                break;
         }
     });
 }
-
 
 // --- DATA & NAVIGATION ---
 async function navigateToEditor(id = null) {
@@ -178,10 +216,8 @@ async function handleSavePortfolio() {
     const validationErrors = validatePortfolio(data);
 
     if (validationErrors.length > 0) {
-        const errorList = validationErrors.map(err => `<li>${err.message}</li>`).join('');
-        // The message in showAlert can interpret HTML
-        showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
-        return;
+        const errorMessages = validationErrors.map(err => err.message).join('\n');
+        return showAlert("Validation Error", `Please fix the following issues:\n\n${errorMessages}`);
     }
 
     try {
@@ -189,19 +225,21 @@ async function handleSavePortfolio() {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
             showToast("Portfolio updated!", 'success');
         } else {
-            await Storage.addPortfolio(currentUser.uid, data);
-            showToast("Portfolio saved!", 'success');
+            const newId = await Storage.addPortfolio(currentUser.uid, data);
+            showToast("Portfolio created!", 'success');
         }
         navigateTo('dashboard');
     } catch (error) {
         console.error("Save Error:", error);
-        showAlert("Save Error", "Could not save portfolio. Check console for details.");
+        showAlert("Save Error", "Could not save portfolio. Check the console for more details.");
     }
 }
 
 async function handleDelete(id) {
     try {
         await Storage.deletePortfolio(currentUser.uid, id);
+        // Also make it private if it was public
+        await Storage.makePortfolioPrivate(id).catch(() => {});
         portfoliosCache = portfoliosCache.filter(p => p.id !== id);
         UI.renderDashboard(portfoliosCache);
         showToast("Portfolio deleted.", 'info');
@@ -213,7 +251,6 @@ async function handleDelete(id) {
 async function handleExport(id) {
     const portfolio = portfoliosCache.find(p => p.id === id);
     if (!portfolio) return;
-    // Exclude Firestore-specific fields from export
     const { createdAt, lastModified, ...exportData } = portfolio;
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -222,7 +259,7 @@ async function handleExport(id) {
     a.href = url;
     a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
     document.body.appendChild(a);
-    a.click();
+a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
@@ -238,15 +275,13 @@ function handleImport() {
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
-                // Basic validation for imported file
                 if (!data.portfolioTitle || !data.firstName) {
                     throw new Error("File does not appear to be a valid portfolio.");
                 }
                 await Storage.addPortfolio(currentUser.uid, data);
-                navigateTo('dashboard'); // This will refetch and render
+                navigateTo('dashboard');
                 showToast("Portfolio imported!", 'success');
             } catch (error) {
-                console.error("Import error", error);
                 showAlert("Import Failed", `Could not import file: ${error.message}`);
             }
         };
@@ -254,7 +289,6 @@ function handleImport() {
     };
     input.click();
 }
-
 
 async function navigateTo(view, data = null) {
     UI.updateHeader(view, currentUser);
@@ -273,12 +307,11 @@ async function navigateTo(view, data = null) {
                 await UI.renderPortfolioPreview(data);
                 UI.showView('preview-view');
             } else {
-                // If no data, go back to dashboard
                 navigateTo('dashboard');
             }
             break;
         default:
-             UI.showView('login-view');
+            UI.showView('login-view');
     }
 }
 
