@@ -1,7 +1,11 @@
-// NOTE: In a real-world scenario, you would not expose an API key on the client side.
-// This is done for demonstration purposes. In production, this call should be made
-// from a secure backend server.
-const API_KEY = ''; // This will be provided by the environment.
+
+// HOW TO GET A KEY:
+// 1. Go to Google AI Studio: https://aistudio.google.com/
+// 2. Click "Get API key" and create a new key.
+// 3. Copy the key and paste it below.
+
+const API_KEY = 'AIzaSyBSIOzrKMkXlYBFxzGWOFYdbb9mF1TsOEo'; // <--- PASTE YOUR KEY HERE
+
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
 /**
@@ -10,6 +14,10 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-
  * @returns {Promise<string>} The generated text from the model.
  */
 async function callGeminiApi(prompt) {
+    if (!API_KEY || API_KEY === 'PASTE_YOUR_GOOGLE_GEMINI_API_KEY_HERE') {
+        return "AI feature is not configured. Please add your Google Gemini API key in ai.js.";
+    }
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -20,7 +28,9 @@ async function callGeminiApi(prompt) {
         });
 
         if (!response.ok) {
-            throw new Error(`API call failed with status: ${response.status}`);
+            const errorData = await response.json();
+            console.error("API Error Response:", errorData);
+            throw new Error(`API call failed: ${errorData.error.message}`);
         }
 
         const data = await response.json();
@@ -35,7 +45,7 @@ async function callGeminiApi(prompt) {
 
     } catch (error) {
         console.error('Error calling Gemini API:', error);
-        return "Sorry, there was an error processing your request.";
+        return `Sorry, there was an error: ${error.message}`;
     }
 }
 
