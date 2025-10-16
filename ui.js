@@ -7,7 +7,7 @@ const aiModalOverlay = document.getElementById('ai-modal-overlay');
 export const showdownConverter = new showdown.Converter({
     simpleLineBreaks: true,
     strikethrough: true,
-tables: true,
+    tables: true,
 });
 
 export function showView(viewId) {
@@ -50,7 +50,6 @@ export function updateHeader(view, user) {
     }
 }
 
-
 export function renderDashboard(portfolios) {
     const list = document.getElementById('portfolio-list');
     if (!portfolios || portfolios.length === 0) {
@@ -64,7 +63,7 @@ export function renderDashboard(portfolios) {
             <h3>${p.portfolioTitle || 'Untitled Portfolio'}</h3>
             <p>Last modified: ${p.lastModified && p.lastModified.toDate ? new Date(p.lastModified.toDate()).toLocaleString() : 'N/A'}</p>
             <div class="card-actions">
-                <button data-action="share" data-id="${p.id}">Share</button>
+                <button data-action="share" data-id="${p.id}" class="${p.isPublic ? 'is-public' : ''}">Share</button>
                 <button data-action="preview" data-id="${p.id}">Preview</button>
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
                 <button data-action="delete" data-id="${p.id}" class="delete-btn">Delete</button>
@@ -76,13 +75,13 @@ export function renderDashboard(portfolios) {
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
-    const portfolioTheme = data.theme || 'theme-space'; // Get the portfolio's theme
+    const portfolioTheme = data.theme || 'theme-space'; 
 
     try {
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
-        // Apply the portfolio-specific theme to the preview container
-        previewContainer.className = portfolioTheme;
+        // Add all necessary classes for proper styling
+        previewContainer.className = `portfolio-template ${templateName} ${portfolioTheme}`;
     } catch (error) {
         console.error(`Error loading template '${templateName}.js':`, error);
         previewContainer.innerHTML = `<p style="color: var(--color-error); text-align: center;">Could not load portfolio template. Make sure the file '/templates/${templateName}.js' exists and has no errors.</p>`;
@@ -102,7 +101,6 @@ export function downloadAsPDF() {
     html2pdf().from(content).set(opt).save();
 }
 
-
 export function applyTheme(themeName) {
     document.body.className = themeName || 'theme-space';
 }
@@ -113,7 +111,6 @@ function populateAppThemeSelector(currentTheme) {
         themeSelect.value = currentTheme;
     }
 }
-
 
 export function showAiModal() {
     aiModalOverlay.classList.remove('hidden');
