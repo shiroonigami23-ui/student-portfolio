@@ -12,13 +12,17 @@ const escapeHtml = (unsafe) => {
 };
 
 // A more robust way to render a section
-const renderSection = (title, items, itemRenderer) => {
-    // FIXED: Only check if the array has items, not for a specific property on the first item.
-    if (!items || items.length === 0) return '';
+const renderSection = (title, items, itemRenderer, before = '', after = '') => {
+    // Filter out items that are essentially empty
+    const validItems = items ? items.filter(item => Object.values(item).some(val => val && val.trim() !== '')) : [];
+    if (validItems.length === 0) return '';
+    
     return `
-        <section class="preview-${title.toLowerCase().replace(' ', '')}">
+        <section class="preview-${title.toLowerCase().replace(/\s/g, '')}">
             <h3>${escapeHtml(title)}</h3>
-            ${items.map(itemRenderer).join('')}
+            ${before}
+            ${validItems.map(itemRenderer).join('')}
+            ${after}
         </section>
     `;
 };
