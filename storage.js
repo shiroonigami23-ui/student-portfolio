@@ -1,3 +1,5 @@
+import { createPortfolio, updatePortfolio as updatePortfolioObject } from '/portfolio.js';
+
 const PORTFOLIO_KEY = 'portfolioApp.portfolios';
 const THEME_KEY = 'portfolioApp.theme';
 
@@ -15,11 +17,8 @@ export function getPortfolioById(id) {
 
 export function addPortfolio(portfolioData) {
     const portfolios = getPortfolios();
-    const newPortfolio = {
-        ...portfolioData,
-        id: `portfolio_${Date.now()}`,
-        lastModified: new Date().toISOString(),
-    };
+    // Use the portfolio module to create the object
+    const newPortfolio = createPortfolio(portfolioData);
     portfolios.push(newPortfolio);
     savePortfolios(portfolios);
 }
@@ -28,11 +27,8 @@ export function updatePortfolio(updatedData) {
     const portfolios = getPortfolios();
     const index = portfolios.findIndex(p => p.id === updatedData.id);
     if (index > -1) {
-        portfolios[index] = {
-            ...portfolios[index],
-            ...updatedData,
-            lastModified: new Date().toISOString(),
-        };
+        // Use the portfolio module to handle the update logic
+        portfolios[index] = updatePortfolioObject(portfolios[index], updatedData);
         savePortfolios(portfolios);
     }
 }
