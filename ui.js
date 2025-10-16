@@ -1,106 +1,118 @@
-import { THEMES } from './config.js';
+let currentStep = 1;
+const form = document.getElementById('portfolio-form');
+const steps = form.querySelectorAll(".form-step");
 
-const headerActionsEl = document.getElementById('header-actions');
-const portfolioListEl = document.getElementById('portfolio-list');
-const previewContentEl = document.getElementById('portfolio-preview-content');
+// Navigation Event Listeners
+document.getElementById('next-step-btn').addEventListener('click', () => navigateSteps(1));
+document.getElementById('prev-step-btn').addEventListener('click', () => navigateSteps(-1));
 
-export function showView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+// Dynamic Item Buttons
+document.getElementById('add-skill-btn').addEventListener('click', () => addSkillItem());
+document.getElementById('add-project-btn').addEventListener('click', () => addProjectItem());
+
+
+export function resetForm() {
+    form.reset();
+    document.getElementById('skills-editor').innerHTML = '';
+    document.getElementById('projects-editor').innerHTML = '';
+    currentStep = 1;
+    showStep(currentStep);
+    addSkillItem(); // Start with one skill item
+    addProjectItem(); // Start with one project item
 }
 
-export function populateThemes(currentTheme) {
-    const select = document.createElement('select');
-    select.id = 'theme-select';
-    select.innerHTML = Object.entries(THEMES)
-        .map(([value, text]) => `<option value="${value}" ${value === currentTheme ? 'selected' : ''}>${text}</option>`)
-        .join('');
-    // Clear and append to ensure no duplicates
-    headerActionsEl.innerHTML = ''; 
-    headerActionsEl.appendChild(select);
-}
+export function populateForm(data) {
+    resetForm();
+    Object.keys(data).forEach(key => {
+        const el = form.elements[key];
+        if (el) {
+            if(el.type === 'file') {
+                // Cannot pre-fill file inputs
+            } else {
+                el.value = data[key];
+            }
+        }
+    });
 
-export function applyTheme(theme) {
-    document.body.className = theme;
-}
-
-export function updateHeader(view, data) {
-    populateThemes(document.body.className); // Always show theme selector
-    switch (view) {
-        case 'editor':
-            headerActionsEl.insertAdjacentHTML('afterbegin', '<button id="preview-portfolio-btn" class="primary-btn">Preview</button>');
-            break;
-        case 'preview':
-            headerActionsEl.insertAdjacentHTML('afterbegin', `
-                <button id="download-pdf-btn">Download PDF</button>
-                <button id="back-to-dashboard-btn">Back to Dashboard</button>
-            `);
-            break;
-        case 'dashboard':
-        default:
-            // Theme selector is already there
-            break;
+    // Populate dynamic items
+    if (data.skills && data.skills.length > 0) {
+        document.getElementById('skills-editor').innerHTML = '';
+        data.skills.forEach(s => addSkillItem(s));
+    }
+    if (data.projects && data.projects.length > 0) {
+        document.getElementById('projects-editor').innerHTML = '';
+        data.projects.forEach(p => addProjectItem(p));
     }
 }
 
-export function renderDashboard(portfolios) {
-    if (portfolios.length === 0) {
-        portfolioListEl.innerHTML = `<p>No portfolios created yet. Click the button below to start!</p>`;
-        return;
+export function collectFormData() {
+    const data = {};
+    const formData = new FormData(form);
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
     }
-    portfolioListEl.innerHTML = portfolios.map(p => `
-        <div class="portfolio-card">
-            <h3>${p.portfolioTitle || 'Untitled Portfolio'}</h3>
-            <p>Last updated: ${new Date(p.lastModified).toLocaleDateString()}</p>
-            <div class="card-actions">
-                <button data-action="edit" data-id="${p.id}">Edit</button>
-                <button data-action="preview" data-id="${p.id}" class="primary-btn">Preview</button>
-                <button data-action="delete" data-id="${p.id}">Delete</button>
-            </div>
-        </div>
-    `).join('');
+
+    // Handle dynamic items
+    data.skills = Array.from(document.querySelectorAll('#skills-editor .item-editor')).map(card => ({
+        name: card.querySelector('[name="skillName"]').value,
+        level: card.querySelector('[name="skillLevel"]').value
+    }));
+    data.projects = Array.from(document.querySelectorAll('#projects-editor .item-editor')).map(card => ({
+        title: card.querySelector('[name="projectTitle"]').value,
+        description: card.querySelector('[name="projectDescription"]').value
+    }));
+
+    return data;
 }
 
-export function renderPortfolioPreview(data) {
-    const converter = new showdown.Converter();
-    const template = data.template || 'modern';
-    previewContentEl.className = `template-${template}`;
 
-    // Basic structure, can be expanded with different template logic
-    previewContentEl.innerHTML = `
-        <div class="p-header">
-            ${data.profilePic ? `<img src="${data.profilePic}" class="p-pic" alt="Profile">` : ''}
-            <h1>${data.firstName} ${data.lastName}</h1>
-            <p>${data.email}</p>
-        </div>
-        <div class="p-section">
-            <h2>Summary</h2>
-            <div>${converter.makeHtml(data.summary || '')}</div>
-        </div>
-        <div class="p-section">
-            <h2>Skills</h2>
-            <ul>${(data.skills || []).map(s => `<li>${s.name} (${s.level})</li>`).join('')}</ul>
-        </div>
-        <div class="p-section">
-            <h2>Projects</h2>
-            ${(data.projects || []).map(p => `
-                <div>
-                    <h3>${p.title}</h3>
-                    <p>${p.description}</p>
-                </div>
-            `).join('')}
-        </div>
+function navigateSteps(direction) {
+    const newStep = currentStep + direction;
+    if (newStep > 0 && newStep <= steps.length) {
+        currentStep = newStep;
+        showStep(currentStep);
+    }
+}
+
+function showStep(stepNum) {
+    steps.forEach((step, index) => {
+        step.classList.toggle('active', index + 1 === stepNum);
+    });
+    document.getElementById('prev-step-btn').disabled = stepNum === 1;
+    document.getElementById('next-step-btn').disabled = stepNum === steps.length;
+}
+
+function addSkillItem(skill = { name: '', level: 'Intermediate' }) {
+    const container = document.getElementById('skills-editor');
+    const div = document.createElement('div');
+    div.className = 'item-editor';
+    div.innerHTML = `
+        <input type="text" name="skillName" placeholder="Skill (e.g., JavaScript)" value="${skill.name}">
+        <select name="skillLevel">
+            <option ${skill.level === 'Novice' ? 'selected' : ''}>Novice</option>
+            <option ${skill.level === 'Intermediate' ? 'selected' : ''}>Intermediate</option>
+            <option ${skill.level === 'Advanced' ? 'selected' : ''}>Advanced</option>
+            <option ${skill.level === 'Expert' ? 'selected' : ''}>Expert</option>
+        </select>
+        <button type="button" class="delete-btn item-delete-btn">Delete</button>
     `;
+    div.querySelector('.item-delete-btn').addEventListener('click', () => {
+        div.remove();
+    });
+    container.appendChild(div);
 }
 
-export function downloadAsPDF() {
-    const element = document.getElementById('portfolio-preview-content');
-     const opt = {
-        margin: 0.5,
-        filename: 'portfolio.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+function addProjectItem(project = { title: '', description: '' }) {
+     const container = document.getElementById('projects-editor');
+     const div = document.createElement('div');
+     div.className = 'item-editor project-editor';
+     div.innerHTML = `
+        <input type="text" name="projectTitle" placeholder="Project Title" value="${project.title}">
+        <textarea name="projectDescription" placeholder="Project Description">${project.description}</textarea>
+        <button type="button" class="delete-btn item-delete-btn">Delete</button>
+     `;
+     div.querySelector('.item-delete-btn').addEventListener('click', () => {
+        div.remove();
+    });
+     container.appendChild(div);
 }
