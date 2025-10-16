@@ -1,27 +1,27 @@
+import { showToast } from './notifications.js';
+
 const modalOverlay = document.getElementById('modal-overlay');
 const modalTitle = document.getElementById('modal-title');
 const modalMessage = document.getElementById('modal-message');
 const modalActions = document.getElementById('modal-actions');
 
-let activeModal = null; // To handle one modal at a time
+let activeModal = null;
 
-/**
- * The core function to display a modal with custom content and buttons.
- * @param {string} title - The title to display in the modal header.
- * @param {string} message - The main text content of the modal.
- * @param {Array<object>} buttons - An array of button objects, e.g., [{ text: 'OK', class: 'primary-btn', onClick: () => {} }]
- */
-function showModal(title, message, buttons) {
-    if (activeModal) return; // Prevent multiple modals
+function showModal(title, message, buttons, isHtml = false) {
+    if (activeModal) return;
 
     modalTitle.textContent = title;
-    modalMessage.textContent = message;
-    modalActions.innerHTML = ''; // Clear previous buttons
+    if (isHtml) {
+        modalMessage.innerHTML = message;
+    } else {
+        modalMessage.textContent = message;
+    }
+    modalActions.innerHTML = '';
 
     buttons.forEach(btnInfo => {
         const button = document.createElement('button');
         button.textContent = btnInfo.text;
-        button.className = btnInfo.class || ''; // Apply custom classes
+        button.className = btnInfo.class || '';
         button.addEventListener('click', () => {
             if (btnInfo.onClick) {
                 btnInfo.onClick();
@@ -32,57 +32,51 @@ function showModal(title, message, buttons) {
     });
 
     modalOverlay.classList.remove('hidden');
-    activeModal = { hide: hideModal }; // Set the active modal
+    activeModal = { hide: hideModal };
 }
 
-/**
- * Hides the currently active modal.
- */
 function hideModal() {
     if (!activeModal) return;
     modalOverlay.classList.add('hidden');
     activeModal = null;
 }
 
-// Close modal if user clicks outside of the content area
 modalOverlay.addEventListener('click', (e) => {
     if (e.target === modalOverlay && activeModal) {
         activeModal.hide();
     }
 });
 
-/**
- * Shows a confirmation dialog.
- * @param {string} title - The title of the confirmation.
- * @param {string} message - The question or message for the user.
- * @param {function} onConfirm - The function to call if the user confirms.
- */
 export function showConfirmation(title, message, onConfirm) {
     showModal(title, message, [
-        {
-            text: 'Cancel',
-            class: '',
-            onClick: null // Just closes the modal
-        },
-        {
-            text: 'Confirm',
-            class: 'delete-btn',
-            onClick: onConfirm
-        }
+        { text: 'Cancel' },
+        { text: 'Confirm', class: 'delete-btn', onClick: onConfirm }
     ]);
 }
 
-/**
- * Shows an alert message.
- * @param {string} title - The title of the alert.
- * @param {string} message - The message to display.
- */
 export function showAlert(title, message) {
-    showModal(title, message, [
-        {
-            text: 'OK',
-            class: 'primary-btn',
-            onClick: null // Just closes the modal
-        }
-    ]);
+    showModal(title, message, [{ text: 'OK', class: 'primary-btn' }]);
+}
+
+export function showShareModal(url) {
+    const messageHtml = `
+        <p>Anyone with this link can view a read-only version of your portfolio.</p>
+        <div class="share-link-wrapper">
+            <input type="text" readonly value="${url}" id="share-link-input">
+            <button id="copy-share-link-btn" class="primary-btn">Copy</button>
+        </div>
+    `;
+    showModal("Share Portfolio", messageHtml, [{ text: 'Close' }], true);
+
+    // Add copy functionality after modal is shown
+    const copyBtn = document.getElementById('copy-share-link-btn');
+    const linkInput = document.getElementById('share-link-input');
+    if (copyBtn && linkInput) {
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent modal from closing
+            linkInput.select();
+            document.execCommand('copy');
+            showToast("Link copied!", 'success');
+        });
+    }
 }
