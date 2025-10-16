@@ -181,13 +181,11 @@ async function shareModalClickHandler(e) {
     } else if (id === 'copy-link-btn') {
         const input = document.getElementById('share-link-input');
         input.select();
-        // Use the older execCommand for broader compatibility in sandboxed environments.
         document.execCommand('copy');
         showToast('Link copied!');
     }
 }
 
-// This handler is now correctly wired up in setupAllEventListeners and will work.
 async function aiModalClickHandler(e) {
     const button = e.target.closest('button');
     if (!button) return;
