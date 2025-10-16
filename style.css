@@ -331,3 +331,13 @@ button:disabled {
         grid-row: 3;
     }
 }
+/* --- Add this block to the end of your style.css file --- */
+
+.delete-btn {
+    padding: 0.5rem 1rem; /* Adjust padding for smaller buttons in forms */
+}
+
+.item-delete-btn {
+    justify-self: end; /* Aligns the delete button to the right in the grid */
+    align-self: center; /* Vertically centers the button */
+}
