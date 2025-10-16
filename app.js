@@ -56,7 +56,6 @@ async function handlePublicView(portfolioId) {
 }
 
 async function handleUserLoggedIn(user) {
-    // The initial theme is set by the first call to navigateTo
     navigateTo('dashboard');
 }
 
@@ -245,9 +244,10 @@ function handleImport() {
 }
 
 async function navigateTo(view, data = null) {
+    // FIX: Show the correct view immediately before loading its data.
+    UI.showView(`${view}-view`);
     UI.updateHeader(view, currentUser);
 
-    // Apply the correct theme based on the view
     if (view === 'preview' && data && data.theme) {
         UI.applyTheme(data.theme);
     } else {
@@ -258,16 +258,13 @@ async function navigateTo(view, data = null) {
         case 'dashboard':
             portfoliosCache = await Storage.getPortfolios(currentUser.uid);
             UI.renderDashboard(portfoliosCache);
-            UI.showView('dashboard-view');
             break;
         case 'editor':
             document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
-            UI.showView('editor-view');
             break;
         case 'preview':
             if (data) {
                 await UI.renderPortfolioPreview(data);
-                UI.showView('preview-view');
             }
             break;
     }
