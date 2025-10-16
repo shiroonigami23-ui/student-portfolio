@@ -157,6 +157,12 @@ h2 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-primary); }
 .portfolio-template .project-links a { color: var(--accent-primary); text-decoration: none; font-weight: 600; }
 .portfolio-template .project-links a:hover { text-decoration: underline; }
 
+/* Styles for Markdown-generated content */
+.markdown-content ul { list-style-type: disc; padding-left: 20px; }
+.markdown-content li { margin-bottom: 0.5rem; }
+.markdown-content a { color: var(--accent-primary); }
+.markdown-content p:last-child { margin-bottom: 0; }
+
 /* Modern Template Styles */
 .portfolio-template.modern .preview-header { text-align: center; margin-bottom: 2rem; }
 .portfolio-template.modern .profile-pic { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; border: 3px solid var(--accent-primary); }
