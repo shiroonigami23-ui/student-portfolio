@@ -7,7 +7,8 @@ import * as Storage from './storage.js';
 import { showAlert, showConfirmation } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
-import { improveWithAI, generateBulletPoints } from './ai.js';
+// FIXED: Changed 'improveWithAI' to 'improveWriting' to match the function exported from ai.js
+import { improveWriting, generateBulletPoints } from './ai.js';
 
 
 // --- STATE ---
@@ -19,8 +20,8 @@ let portfoliosCache = [];
 // --- INITIALIZATION ---
 function init() {
     Editor.init(); // CRITICAL: Initialize the editor module first
-    Editor.setupLiveValidation(); 
-    
+    Editor.setupLiveValidation();
+
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
         if (user) {
@@ -42,8 +43,9 @@ async function handleUserLoggedIn(user) {
 function handleUserLoggedOut() {
     portfoliosCache = [];
     currentlyEditingId = null;
+    // Pass null for user to correctly update header for logged-out state
+    UI.updateHeader('login', null);
     UI.showView('login-view');
-    UI.updateHeader('login');
 }
 
 async function handleGoogleSignIn() {
@@ -81,7 +83,7 @@ function setupEventListeners() {
         if (id === 'import-portfolio-btn') return handleImport();
         if (id === 'save-portfolio-btn') return handleSavePortfolio();
         if (id === 'cancel-edit-btn') return navigateTo('dashboard');
-        
+
         if (action && dataId) {
             switch (action) {
                 case 'edit': return navigateToEditor(dataId);
@@ -94,7 +96,7 @@ function setupEventListeners() {
             }
         }
     });
-    
+
     document.getElementById('header-actions').addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -103,6 +105,7 @@ function setupEventListeners() {
         if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
     });
 
+    // Use 'change' event for select dropdown
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
@@ -114,8 +117,9 @@ function setupEventListeners() {
     // AI Modal Actions
     let activeTextarea = null;
     document.getElementById('editor-view').addEventListener('click', (e) => {
-        if (e.target.classList.contains('ai-assist-btn')) {
-            activeTextarea = e.target.closest('.textarea-wrapper').querySelector('textarea');
+        const button = e.target.closest('button');
+        if (button && button.classList.contains('ai-assist-btn')) {
+            activeTextarea = button.closest('.textarea-wrapper').querySelector('textarea');
             UI.setAiModalState('options');
             UI.showAiModal();
         }
@@ -133,8 +137,9 @@ function setupEventListeners() {
         if (action === 'improve' || action === 'bullets') {
             UI.setAiModalState('loading');
             try {
+                // FIXED: Changed 'improveWithAI' to 'improveWriting'
                 const newText = action === 'improve'
-                    ? await improveWithAI(originalText)
+                    ? await improveWriting(originalText)
                     : await generateBulletPoints(originalText);
                 UI.setAiModalState('result', newText);
             } catch (error) {
@@ -148,7 +153,9 @@ function setupEventListeners() {
             }
             UI.hideAiModal();
         } else if (action === 'close') {
-            UI.hideAiModal();
+            // This handles both cancel and back buttons
+            UI.setAiModalState('options'); // Go back to options view
+            UI.hideAiModal(); // Hide the whole modal
         }
     });
 }
@@ -172,7 +179,9 @@ async function handleSavePortfolio() {
 
     if (validationErrors.length > 0) {
         const errorList = validationErrors.map(err => `<li>${err.message}</li>`).join('');
-        return showAlert("Validation Error", `Please fix the following issues:<ul>${errorList}</ul>`);
+        // The message in showAlert can interpret HTML
+        showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
+        return;
     }
 
     try {
@@ -185,7 +194,8 @@ async function handleSavePortfolio() {
         }
         navigateTo('dashboard');
     } catch (error) {
-        showAlert("Save Error", "Could not save portfolio.");
+        console.error("Save Error:", error);
+        showAlert("Save Error", "Could not save portfolio. Check console for details.");
     }
 }
 
@@ -194,7 +204,7 @@ async function handleDelete(id) {
         await Storage.deletePortfolio(currentUser.uid, id);
         portfoliosCache = portfoliosCache.filter(p => p.id !== id);
         UI.renderDashboard(portfoliosCache);
-        showToast("Portfolio deleted.");
+        showToast("Portfolio deleted.", 'info');
     } catch (error) {
         showAlert("Delete Error", "Could not delete portfolio.");
     }
@@ -203,20 +213,24 @@ async function handleDelete(id) {
 async function handleExport(id) {
     const portfolio = portfoliosCache.find(p => p.id === id);
     if (!portfolio) return;
-    const jsonString = JSON.stringify(portfolio, null, 2);
+    // Exclude Firestore-specific fields from export
+    const { createdAt, lastModified, ...exportData } = portfolio;
+    const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
 function handleImport() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.json,application/json';
     input.onchange = e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -224,11 +238,16 @@ function handleImport() {
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
+                // Basic validation for imported file
+                if (!data.portfolioTitle || !data.firstName) {
+                    throw new Error("File does not appear to be a valid portfolio.");
+                }
                 await Storage.addPortfolio(currentUser.uid, data);
-                navigateTo('dashboard');
+                navigateTo('dashboard'); // This will refetch and render
                 showToast("Portfolio imported!", 'success');
             } catch (error) {
-                showAlert("Import Failed", "Invalid portfolio file.");
+                console.error("Import error", error);
+                showAlert("Import Failed", `Could not import file: ${error.message}`);
             }
         };
         reader.readAsText(file);
@@ -253,8 +272,13 @@ async function navigateTo(view, data = null) {
             if (data) {
                 await UI.renderPortfolioPreview(data);
                 UI.showView('preview-view');
+            } else {
+                // If no data, go back to dashboard
+                navigateTo('dashboard');
             }
             break;
+        default:
+             UI.showView('login-view');
     }
 }
 
