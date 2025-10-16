@@ -3,9 +3,8 @@ import { THEMES } from './config.js';
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 
-// Create a single, reusable instance of the converter
 export const showdownConverter = new showdown.Converter({
-    simpleLineBreaks: true, // Converts single newlines to <br>
+    simpleLineBreaks: true,
     strikethrough: true,
     tables: true,
 });
@@ -16,24 +15,45 @@ export function showView(viewId) {
     });
 }
 
-export function updateHeader(view) {
-    headerActions.innerHTML = ''; 
-    const themeSelectHTML = `<select id="theme-select" title="Change Theme">
-        ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
-    </select>`;
-
-    if (view === 'dashboard') {
-        headerActions.innerHTML = themeSelectHTML;
-    } else if (view === 'editor') {
-        headerActions.innerHTML = `${themeSelectHTML}
-            <button id="preview-portfolio-btn">Preview</button>
-            <button id="back-to-dashboard-btn" class="primary-btn">Back</button>`;
-    } else if (view === 'preview') {
-        headerActions.innerHTML = `${themeSelectHTML}
-            <button id="download-pdf-btn">Download PDF</button>
-            <button id="back-to-dashboard-btn" class="primary-btn">Back</button>`;
+export function updateAuthUI(user) {
+    if (user) {
+        // User is signed in, show their info and a logout button
+        headerActions.innerHTML = `
+            <div class="user-profile">
+                <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar">
+                <button id="logout-btn">Logout</button>
+            </div>
+        `;
+    } else {
+        // User is signed out, clear header actions
+        headerActions.innerHTML = '';
     }
-    populateThemes(document.body.className);
+}
+
+
+export function updateHeader(view) {
+    // This function will now only handle the view-specific buttons,
+    // as auth state is handled by updateAuthUI
+    if (view === 'dashboard') {
+        // No extra buttons needed, auth UI is enough
+    } else if (view === 'editor') {
+        document.getElementById('header-actions').insertAdjacentHTML('beforeend', `
+            <button id="preview-portfolio-btn">Preview</button>
+            <button id="back-to-dashboard-btn" class="primary-btn">Back</button>`);
+    } else if (view === 'preview') {
+         document.getElementById('header-actions').insertAdjacentHTML('beforeend', `
+            <button id="download-pdf-btn">Download PDF</button>
+            <button id="back-to-dashboard-btn" class="primary-btn">Back</button>`);
+    }
+    
+    // Theme select should always be available for logged-in users, except on login view
+    if (document.getElementById('logout-btn') && view !== 'login-view') {
+         const themeSelectHTML = `<select id="theme-select" title="Change Theme">
+            ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
+        </select>`;
+        document.getElementById('header-actions').insertAdjacentHTML('afterbegin', themeSelectHTML);
+        populateThemes(document.body.className);
+    }
 }
 
 export function renderDashboard(portfolios) {
@@ -46,7 +66,7 @@ export function renderDashboard(portfolios) {
     list.innerHTML = portfolios.map(p => `
         <div class="portfolio-card">
             <h3>${p.portfolioTitle || 'Untitled Portfolio'}</h3>
-            <p>Last modified: ${new Date(p.lastModified).toLocaleDateString()}</p>
+            <p>Last modified: ${p.lastModified ? new Date(p.lastModified).toLocaleDateString() : 'N/A'}</p>
             <div class="card-actions">
                 <button data-action="export" data-id="${p.id}">Export</button>
                 <button data-action="preview" data-id="${p.id}">Preview</button>
