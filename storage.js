@@ -1,5 +1,5 @@
-import { db, auth } from './firebase.js';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { db } from './firebase.js';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
 function getUserPortfoliosRef(userId) {
@@ -32,7 +32,6 @@ export async function getPortfolioById(userId, id) {
 
 export async function addPortfolio(userId, portfolioData) {
     const portfoliosRef = getUserPortfoliosRef(userId);
-    // Use the logic from portfolio.js to create a structured object
     const newPortfolio = createPortfolio(portfolioData);
     try {
         const docRef = await addDoc(portfoliosRef, newPortfolio);
@@ -46,10 +45,8 @@ export async function addPortfolio(userId, portfolioData) {
 export async function updatePortfolio(userId, id, updatedData) {
     const docRef = doc(db, 'users', userId, 'portfolios', id);
     const existingData = await getPortfolioById(userId, id);
-    // Use the logic from portfolio.js to prepare the update
     const dataToUpdate = updatePortfolioObject(existingData, updatedData);
     
-    // Remove properties that shouldn't be in the final update payload
     delete dataToUpdate.id;
     delete dataToUpdate.createdAt;
 
@@ -67,6 +64,37 @@ export async function deletePortfolio(userId, id) {
         await deleteDoc(docRef);
     } catch (error) {
         console.error("Error deleting portfolio:", error);
+        throw error;
+    }
+}
+
+export async function makePortfolioPublic(userId, portfolioId) {
+    const userPortfolioRef = doc(db, 'users', userId, 'portfolios', portfolioId);
+    const publicPortfolioRef = doc(db, 'publicPortfolios', portfolioId);
+
+    try {
+        const portfolioDoc = await getDoc(userPortfolioRef);
+        if (portfolioDoc.exists()) {
+            const portfolioData = portfolioDoc.data();
+            await setDoc(publicPortfolioRef, portfolioData);
+            await updateDoc(userPortfolioRef, { isPublic: true });
+            return `${window.location.origin}${window.location.pathname}?shareId=${portfolioId}`;
+        } else {
+            throw new Error("Portfolio not found.");
+        }
+    } catch (error) {
+        console.error("Error making portfolio public:", error);
+        throw error;
+    }
+}
+
+export async function getPublicPortfolio(portfolioId) {
+    try {
+        const docRef = doc(db, 'publicPortfolios', portfolioId);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    } catch (error) {
+        console.error("Error fetching public portfolio:", error);
         throw error;
     }
 }
