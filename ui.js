@@ -7,7 +7,7 @@ const aiModalOverlay = document.getElementById('ai-modal-overlay');
 export const showdownConverter = new showdown.Converter({
     simpleLineBreaks: true,
     strikethrough: true,
-    tables: true,
+tables: true,
 });
 
 export function showView(viewId) {
@@ -17,23 +17,22 @@ export function showView(viewId) {
 }
 
 export function updateHeader(view, user) {
-    headerActions.innerHTML = '';
+    headerActions.innerHTML = ''; 
 
     if (view === 'public-preview') {
-        // Special header for public share link view
         headerActions.innerHTML = `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         return;
     }
 
     if (user) {
         const themeSelectHTML = `
-            <select id="theme-select" title="Change Theme">
+            <select id="app-theme-select" title="Change Application Theme">
                 ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
             </select>`;
 
         let buttonsHTML = '';
-        if (view === 'editor' || view === 'preview') {
-            buttonsHTML = `<button id="back-to-dashboard-btn">Dashboard</button>`;
+        if (view === 'editor' || view === 'preview' || view === 'dashboard') {
+             buttonsHTML = (view !== 'dashboard') ? `<button id="back-to-dashboard-btn">Dashboard</button>` : '';
         }
         if (view === 'preview') {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
@@ -46,11 +45,11 @@ export function updateHeader(view, user) {
         `;
 
         const savedTheme = localStorage.getItem('theme') || 'theme-space';
-        populateThemes(savedTheme);
+        populateAppThemeSelector(savedTheme);
         applyTheme(savedTheme);
-
     }
 }
+
 
 export function renderDashboard(portfolios) {
     const list = document.getElementById('portfolio-list');
@@ -66,7 +65,6 @@ export function renderDashboard(portfolios) {
             <p>Last modified: ${p.lastModified && p.lastModified.toDate ? new Date(p.lastModified.toDate()).toLocaleString() : 'N/A'}</p>
             <div class="card-actions">
                 <button data-action="share" data-id="${p.id}">Share</button>
-                <button data-action="export" data-id="${p.id}">Export</button>
                 <button data-action="preview" data-id="${p.id}">Preview</button>
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
                 <button data-action="delete" data-id="${p.id}" class="delete-btn">Delete</button>
@@ -78,10 +76,13 @@ export function renderDashboard(portfolios) {
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
+    const portfolioTheme = data.theme || 'theme-space'; // Get the portfolio's theme
 
     try {
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
+        // Apply the portfolio-specific theme to the preview container
+        previewContainer.className = portfolioTheme;
     } catch (error) {
         console.error(`Error loading template '${templateName}.js':`, error);
         previewContainer.innerHTML = `<p style="color: var(--color-error); text-align: center;">Could not load portfolio template. Make sure the file '/templates/${templateName}.js' exists and has no errors.</p>`;
@@ -90,27 +91,29 @@ export async function renderPortfolioPreview(data) {
 
 export function downloadAsPDF() {
     const content = document.getElementById('portfolio-preview-content');
-    const portfolioTitle = content.querySelector('.preview-header h1')?.textContent || 'portfolio';
+    const portfolioTitle = content.querySelector('h1')?.textContent || 'portfolio';
     const opt = {
-        margin: 0.5,
-        filename: `${portfolioTitle.toLowerCase().replace(/\s+/g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        margin:       [0.5, 0.2, 0.5, 0.2],
+        filename:     `${portfolioTitle.toLowerCase().replace(/\s+/g, '-')}-portfolio.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     html2pdf().from(content).set(opt).save();
 }
+
 
 export function applyTheme(themeName) {
     document.body.className = themeName || 'theme-space';
 }
 
-function populateThemes(currentTheme) {
-    const themeSelect = document.getElementById('theme-select');
+function populateAppThemeSelector(currentTheme) {
+    const themeSelect = document.getElementById('app-theme-select');
     if (themeSelect) {
         themeSelect.value = currentTheme;
     }
 }
+
 
 export function showAiModal() {
     aiModalOverlay.classList.remove('hidden');
