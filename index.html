@@ -3,126 +3,102 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio Generator v2.0</title>
+    <title>Portfolio Architect Pro</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+
 </head>
 <body class="theme-space">
 
-    <div class="app-container">
-        <!-- App Header -->
-        <header class="app-header">
+    <div id="app-container">
+
+        <!-- =========== App Header (Global) =========== -->
+        <header id="app-header">
             <div class="logo">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <h1>Portfolio Architect</h1>
             </div>
-            <div class="theme-switcher">
-                <select id="theme-select">
-                    <option value="theme-space">Space</option>
-                    <option value="theme-day">Day</option>
-                    <option value="theme-night">Night</option>
-                    <option value="theme-warm">Warm</option>
-                    <option value="theme-forest">Forest</option>
-                    <option value="theme-ocean">Ocean</option>
-                    <option value="theme-mint">Mint</option>
-                </select>
-            </div>
+            <div id="header-actions"></div>
         </header>
 
-        <!-- Main Content Grid -->
-        <main class="main-content">
-            <!-- Form Panel -->
-            <div class="form-panel">
-                <form id="profile-form" autocomplete="off" novalidate>
-                    <fieldset>
-                        <legend>Core Identity</legend>
-                        <div class="grid-2">
-                            <div class="input-group"><input type="text" id="first-name" required placeholder=" " /><label for="first-name">First Name</label></div>
-                            <div class="input-group"><input type="text" id="last-name" required placeholder=" " /><label for="last-name">Last Name</label></div>
-                        </div>
-                        <div class="grid-2">
-                             <div class="input-group"><input type="number" id="rollno" required max="999" min="0" placeholder=" " /><label for="rollno">Roll No (Last 3 digits)</label></div>
-                             <div class="input-group"><input type="email" id="email" placeholder=" " /><label for="email">Email Address</label></div>
-                        </div>
-                         <div class="input-group"><textarea id="summary" placeholder=" " rows="3"></textarea><label for="summary">Summary / About</label></div>
-                    </fieldset>
+        <!-- =========== Page Views =========== -->
+        <main id="main-content">
 
-                    <fieldset>
-                        <legend>Skills & Proficiencies</legend>
-                        <div id="skills-area"></div>
-                        <button type="button" class="add-btn" onclick="addSkillInput()">+ Add Skill</button>
-                    </fieldset>
+            <!-- --- Dashboard View --- -->
+            <div id="dashboard-view" class="view">
+                <h2>Your Portfolios</h2>
+                <div id="portfolio-list"></div>
+                <button id="create-new-btn" class="primary-btn">+ Create New Portfolio</button>
+            </div>
+
+            <!-- --- Editor View --- -->
+            <div id="editor-view" class="view">
+                <div class="editor-header">
+                    <h2 id="editor-title">Create New Portfolio</h2>
+                    <div class="editor-actions">
+                         <button id="save-portfolio-btn" class="primary-btn">Save</button>
+                         <button id="cancel-edit-btn">Cancel</button>
+                    </div>
+                </div>
+                <form id="portfolio-form">
+                    <div class="form-step active" data-step="1">
+                        <h3><span class="step-indicator">1</span> Basic Information</h3>
+                        <input type="text" name="portfolioTitle" placeholder="Portfolio Title (e.g., 'Web Dev Portfolio')" required>
+                        <input type="text" name="firstName" placeholder="First Name" required>
+                        <input type="text" name="lastName" placeholder="Last Name" required>
+                        <input type="email" name="email" placeholder="Email Address">
+                        <textarea name="summary" placeholder="Summary / Professional Bio (Markdown supported)"></textarea>
+                        <div class="file-input-wrapper">
+                            <label for="profile-pic">Profile Picture</label>
+                            <input type="file" id="profile-pic" name="profilePic" accept="image/*">
+                        </div>
+                    </div>
                     
-                     <fieldset>
-                        <legend>Technical Experience</legend>
-                        <div class="checkbox-section">
-                            <label class="group-label">Programming Languages</label>
-                            <div class="checkbox-grid" id="languagesbox"></div>
-                        </div>
-                         <div class="checkbox-section">
-                            <label class="group-label">Technical Areas</label>
-                            <div class="checkbox-grid" id="techbox"></div>
-                        </div>
-                    </fieldset>
+                    <div class="form-step" data-step="2">
+                        <h3><span class="step-indicator">2</span> Skills & Experience</h3>
+                        <div id="skills-editor"></div>
+                        <button type="button" class="add-item-btn" id="add-skill-btn">+ Add Skill</button>
+                    </div>
 
-                    <fieldset>
-                        <legend>Projects</legend>
-                        <div id="projects-area"></div>
-                        <button type="button" class="add-btn" onclick="addProjectInput()">+ Add Project</button>
-                    </fieldset>
-                    
-                    <fieldset>
-                        <legend>Personal Details</legend>
-                        <div class="input-group"><textarea id="hobbies" placeholder=" " rows="2"></textarea><label for="hobbies">Hobbies (comma-separated)</label></div>
-                        <div class="input-group"><input type="text" id="interests" placeholder=" " /><label for="interests">Special Interests (comma-separated)</label></div>
-                        <div class="input-group"><input type="text" id="sports" placeholder=" " /><label for="sports">Sports/Clubs (comma-separated)</label></div>
-                        <div class="input-group"><input type="text" id="achievements" placeholder=" " /><label for="achievements">Achievements (comma-separated)</label></div>
-                        <div class="input-group"><input type="text" id="whatsapp" required placeholder=" " /><label for="whatsapp">WhatsApp No.</label></div>
-                    </fieldset>
+                    <div class="form-step" data-step="3">
+                        <h3><span class="step-indicator">3</span> Projects</h3>
+                        <div id="projects-editor"></div>
+                        <button type="button" class="add-item-btn" id="add-project-btn">+ Add Project</button>
+                    </div>
 
-                    <fieldset>
-                        <legend>Assets</legend>
-                        <div class="grid-2">
-                            <div class="file-upload">
-                                <label for="profile-pic">Profile Picture</label>
-                                <input type="file" id="profile-pic" accept="image/*">
-                            </div>
-                            <div class="file-upload">
-                                <label for="certificates">Certificates</label>
-                                <input type="file" id="certificates" multiple accept="image/*,application/pdf">
-                            </div>
-                        </div>
-                    </fieldset>
+                    <div class="form-step" data-step="4">
+                        <h3><span class="step-indicator">4</span> Customization</h3>
+                        <label for="template-select">Choose a Template:</label>
+                        <select name="template" id="template-select">
+                            <option value="modern">Modern</option>
+                            <option value="classic">Classic</option>
+                            <option value="bold">Bold</option>
+                        </select>
+                         <label for="theme-select">Choose a Color Theme:</label>
+                        <select name="theme" id="theme-select"></select>
+                    </div>
 
+                    <div class="editor-nav">
+                        <button type="button" id="prev-step-btn" disabled>Previous</button>
+                        <button type="button" id="next-step-btn">Next</button>
+                    </div>
                 </form>
             </div>
 
-            <!-- Live Preview Panel -->
-            <div class="preview-panel-container">
-                <div class="preview-panel" id="profile-preview">
-                    <!-- Header -->
-                    <div class="preview-header">
-                        <img id="display-pic" src="https://via.placeholder.com/150" alt="Profile Picture">
-                        <h2 id="display-name">Your Name</h2>
-                        <p id="display-subheader"></p>
-                        <p class="quote" id="display-quote"></p>
-                    </div>
-
-                    <!-- Sections -->
-                    <div id="preview-sections"></div>
-                    
-                     <!-- Action Buttons -->
-                    <div class="preview-actions">
-                        <button id="download-pdf-btn">Download PDF</button>
-                        <button id="delete-btn" class="delete">Delete Profile</button>
-                    </div>
+            <!-- --- Preview View --- -->
+            <div id="preview-view" class="view">
+                <div id="portfolio-preview-content">
+                    <!-- Dynamic content will be rendered here -->
                 </div>
             </div>
+
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
 
