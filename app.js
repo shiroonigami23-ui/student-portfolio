@@ -1,259 +1,301 @@
+// --- IMPORTS ---
+import { auth, db } from './firebase.js';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
 import * as Storage from './storage.js';
-import * as AI from './ai.js';
-import { showConfirmation, showAlert } from './modal.js';
+import { showAlert, showConfirmation } from './modal.js';
 import { showToast } from './notifications.js';
-import { validatePortfolioData } from './validator.js';
-import { auth } from './firebase.js';
-import { onAuthStateChanged, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { validatePortfolio } from './validator.js';
+import { improveWithAI, generateBulletPoints } from './ai.js';
 
 
-let currentView = 'dashboard';
+// --- STATE ---
+let currentUser = null;
 let currentlyEditingId = null;
+let portfoliosCache = [];
 
-// --- Authentication ---
-onAuthStateChanged(auth, user => {
-    if (user) {
-        // User is signed in.
-        UI.updateAuthUI(user);
-        initApp(); // Initialize the main app functionality
-    } else {
-        // User is signed out.
-        UI.updateAuthUI(null);
-        UI.showView('login-view'); // Show a login view if not logged in
-    }
-});
 
-function handleGoogleLogin() {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(error => {
-        console.error("Google Sign-in Error", error);
-        showAlert("Login Failed", "Could not sign in with Google. Please try again.");
-    });
-}
-
-function handleLogout() {
-    signOut(auth);
-}
-
-// --- App Initialization ---
-async function initApp() {
-    UI.populateThemes(Storage.getTheme());
-    UI.applyTheme(Storage.getTheme());
-    Editor.setupLiveValidation();
-    setupEventListeners();
-    await navigateTo('dashboard');
-}
-
-function setupEventListeners() {
-    document.getElementById('header-actions').addEventListener('click', async (e) => {
-        if (e.target.id === 'back-to-dashboard-btn') await navigateTo('dashboard');
-        if (e.target.id === 'preview-portfolio-btn') await navigateTo('preview', Editor.collectFormData());
-        if (e.target.id === 'download-pdf-btn') UI.downloadAsPDF();
-        if (e.target.id === 'logout-btn') handleLogout();
-    });
-
-    // Event listener for login button
-    document.getElementById('main-content').addEventListener('click', e => {
-        if (e.target.id === 'google-login-btn') {
-            handleGoogleLogin();
+// --- INITIALIZATION ---
+function init() {
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            handleUserLoggedIn(user);
+        } else {
+            handleUserLoggedOut();
         }
     });
+    setupEventListeners();
+}
 
-    document.getElementById('dashboard-view').addEventListener('click', async (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
-        
-        if (target.id === 'create-new-btn') {
-            currentlyEditingId = null;
-            Editor.resetForm();
-            await navigateTo('editor');
-        } else if (target.id === 'import-portfolio-btn') {
-            handleImport();
+
+// --- AUTHENTICATION HANDLERS ---
+async function handleUserLoggedIn(user) {
+    UI.showView('dashboard-view');
+    UI.updateHeader('dashboard', user);
+    try {
+        portfoliosCache = await Storage.getPortfolios(user.uid);
+        UI.renderDashboard(portfoliosCache);
+    } catch (error) {
+        console.error("Error fetching portfolios:", error);
+        showAlert("Error", "Could not fetch your portfolios. Please try again later.");
+    }
+}
+
+function handleUserLoggedOut() {
+    portfoliosCache = [];
+    currentlyEditingId = null;
+    UI.showView('login-view');
+    UI.updateHeader('login');
+}
+
+async function handleGoogleSignIn() {
+    console.log("Attempting to sign in with Google...");
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        console.log("Sign-in successful!", result.user);
+        // onAuthStateChanged will handle the rest.
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/auth-domain-config-error') {
+             showAlert("Sign-In Configuration Error", "Please ensure that your domain (localhost) is added to the 'Authorized domains' list in your Firebase Authentication settings.");
         } else {
+            showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
+        }
+    }
+}
+
+async function handleLogout() {
+    try {
+        await signOut(auth);
+        // onAuthStateChanged will handle the rest.
+    } catch (error) {
+        console.error("Logout Error:", error);
+        showAlert("Error", "Failed to log out. Please try again.");
+    }
+}
+
+
+// --- EVENT LISTENERS ---
+function setupEventListeners() {
+
+    // Main Content Event Delegation
+    document.getElementById('main-content').addEventListener('click', async e => {
+        const targetId = e.target.id;
+        const target = e.target.closest('button');
+
+        if (targetId === 'google-signin-btn') {
+            handleGoogleSignIn();
+        }
+        
+        if (targetId === 'create-new-btn' || targetId === 'import-portfolio-btn') {
+            if (targetId === 'create-new-btn') {
+                currentlyEditingId = null;
+                Editor.resetForm();
+                navigateTo('editor');
+            } else {
+                handleImport();
+            }
+        }
+        
+        if (target) {
             const action = target.dataset.action;
             const id = target.dataset.id;
             if (!action || !id) return;
 
-            const portfolio = await Storage.getPortfolioById(id);
-            if (!portfolio) return;
-
-            if (action === 'edit') {
-                currentlyEditingId = id;
-                Editor.populateForm(portfolio);
-                await navigateTo('editor');
+            switch(action) {
+                case 'edit':
+                    currentlyEditingId = id;
+                    const portfolioToEdit = await Storage.getPortfolioById(currentUser.uid, id);
+                    Editor.populateForm(portfolioToEdit);
+                    navigateTo('editor');
+                    break;
+                case 'delete':
+                    showConfirmation(
+                        "Delete Portfolio?",
+                        "This action cannot be undone. Are you sure you want to permanently delete this portfolio?",
+                        () => handleDelete(id)
+                    );
+                    break;
+                case 'preview':
+                    const portfolioToPreview = await Storage.getPortfolioById(currentUser.uid, id);
+                    navigateTo('preview', portfolioToPreview);
+                    break;
+                case 'export':
+                    handleExport(id);
+                    break;
             }
-            if (action === 'delete') {
-                showConfirmation(
-                    'Delete Portfolio',
-                    'Are you sure you want to delete this portfolio? This action cannot be undone.',
-                    async () => {
-                        await Storage.deletePortfolio(id);
-                        await navigateTo('dashboard');
-                        showToast('Portfolio deleted.', 'info');
-                    }
-                );
-            }
-            if (action === 'preview') await navigateTo('preview', portfolio);
-            if (action === 'export') handleExport(portfolio);
         }
     });
+
+    // Editor View Actions
+    document.getElementById('save-portfolio-btn').addEventListener('click', handleSavePortfolio);
+    document.getElementById('cancel-edit-btn').addEventListener('click', () => navigateTo('dashboard'));
     
-    document.getElementById('portfolio-form').addEventListener('click', (e) => {
-        if (e.target.classList.contains('ai-assist-btn')) {
-            const wrapper = e.target.closest('.textarea-wrapper');
-            const textarea = wrapper.querySelector('textarea');
-            handleAiAssist(textarea);
-        }
-    });
-
-    document.getElementById('editor-view').addEventListener('click', async (e) => {
-        if (e.target.id === 'save-portfolio-btn') {
-            const data = Editor.collectFormData();
-            const validationResult = validatePortfolioData(data);
-
-            if (!validationResult.isValid) {
-                showAlert('Validation Error', 'Please fix the following issues:\n\n' + validationResult.errors.join('\n'));
-                return;
-            }
-
-            if (currentlyEditingId) {
-                data.id = currentlyEditingId;
-                await Storage.updatePortfolio(data);
-                showToast('Portfolio updated successfully!', 'success');
-            } else {
-                await Storage.addPortfolio(data);
-                showToast('Portfolio created successfully!', 'success');
-            }
-            await navigateTo('dashboard');
-        }
-        if (e.target.id === 'cancel-edit-btn') await navigateTo('dashboard');
-    });
-
+    // Header Actions
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
             UI.applyTheme(newTheme);
-            Storage.saveTheme(newTheme);
+            // In a full app, this would be saved to user preferences in Firestore
+        }
+    });
+    
+    document.getElementById('header-actions').addEventListener('click', e => {
+        if (e.target.id === 'logout-btn') handleLogout();
+        if (e.target.id === 'back-to-dashboard-btn') navigateTo('dashboard');
+        if (e.target.id === 'download-pdf-btn') UI.downloadAsPDF();
+    });
+
+    // AI Modal Actions
+    let activeTextarea = null;
+    document.getElementById('editor-view').addEventListener('click', (e) => {
+        if (e.target.classList.contains('ai-assist-btn')) {
+            activeTextarea = e.target.previousElementSibling;
+            UI.showAiModal();
+        }
+    });
+
+    document.getElementById('ai-modal').addEventListener('click', async (e) => {
+        const action = e.target.dataset.action;
+        if (!action) return;
+
+        const originalText = activeTextarea.value;
+        UI.setAiModalState('loading');
+        let newText = originalText;
+
+        try {
+            if (action === 'improve') {
+                newText = await improveWithAI(originalText);
+            } else if (action === 'bullets') {
+                newText = await generateBulletPoints(originalText);
+            }
+             if (newText && newText !== originalText) {
+                activeTextarea.value = newText;
+                // Trigger input event for live validation
+                activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            UI.setAiModalState('result');
+        } catch (error) {
+            console.error("AI Assist Error:", error);
+            showAlert("AI Error", "Could not process the request. Please check your API key and try again.");
+            UI.setAiModalState('options'); // Reset on error
+        }
+
+        if (action === 'close' || action === 'use-text') {
+            UI.hideAiModal();
+             // After a short delay, reset the modal for the next use
+            setTimeout(() => UI.setAiModalState('options'), 300);
         }
     });
 }
 
-let activeTextarea = null;
-let lastAiAction = null;
-const aiModal = {
-    overlay: document.getElementById('ai-modal-overlay'),
-    initial: document.getElementById('ai-modal-initial'),
-    loading: document.getElementById('ai-modal-loading'),
-    result: document.getElementById('ai-modal-result'),
-    resultTextarea: document.getElementById('ai-result-textarea'),
-    improveBtn: document.getElementById('ai-improve-btn'),
-    bulletsBtn: document.getElementById('ai-bullets-btn'),
-    useTextBtn: document.getElementById('ai-use-text-btn'),
-    retryBtn: document.getElementById('ai-retry-btn'),
-    backBtn: document.getElementById('ai-back-btn'),
-    cancelBtn: document.getElementById('ai-cancel-btn'),
-};
 
-function handleAiAssist(textarea) {
-    activeTextarea = textarea;
-    aiModal.overlay.classList.remove('hidden');
-    showAiState('initial');
-}
+// --- DATA & NAVIGATION ---
+async function handleSavePortfolio() {
+    const data = Editor.collectFormData();
+    const validationErrors = validatePortfolio(data);
 
-function showAiState(state) {
-    ['initial', 'loading', 'result'].forEach(s => aiModal[s].classList.add('hidden'));
-    aiModal[state].classList.remove('hidden');
-}
-
-async function performAiAction(action) {
-    lastAiAction = action;
-    const originalText = activeTextarea.value;
-    if (!originalText.trim()) {
-        showAlert('Input Needed', 'Please write some text before using AI assist.');
+    if (validationErrors.length > 0) {
+        const errorList = validationErrors.map(err => `<li>${err.message}</li>`).join('');
+        showAlert("Validation Error", `Please fix the following issues:<ul style="text-align: left; margin-top: 1rem;">${errorList}</ul>`);
         return;
     }
-    
-    showAiState('loading');
-    let newText = '';
-    if (action === 'improve') {
-        newText = await AI.improveWriting(originalText);
-    } else if (action === 'bullets') {
-        newText = await AI.generateBulletPoints(originalText);
+
+    try {
+        if (currentlyEditingId) {
+            await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
+            showToast("Portfolio updated successfully!");
+        } else {
+            await Storage.addPortfolio(currentUser.uid, data);
+            showToast("Portfolio saved successfully!");
+        }
+        navigateTo('dashboard');
+    } catch (error) {
+        console.error("Save portfolio error:", error);
+        showAlert("Error", "Could not save the portfolio. Please try again.");
     }
-    aiModal.resultTextarea.value = newText;
-    showAiState('result');
 }
 
-aiModal.improveBtn.addEventListener('click', () => performAiAction('improve'));
-aiModal.bulletsBtn.addEventListener('click', () => performAiAction('bullets'));
-aiModal.retryBtn.addEventListener('click', () => performAiAction(lastAiAction));
-aiModal.backBtn.addEventListener('click', () => showAiState('initial'));
-aiModal.cancelBtn.addEventListener('click', () => aiModal.overlay.classList.add('hidden'));
-aiModal.useTextBtn.addEventListener('click', () => {
-    activeTextarea.value = aiModal.resultTextarea.value;
-    aiModal.overlay.classList.add('hidden');
-    activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-});
-
-function handleExport(portfolio) {
-    const dataStr = JSON.stringify(portfolio, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const title = portfolio.portfolioTitle?.toLowerCase().replace(/\s+/g, '-') || 'portfolio';
-    a.href = url;
-    a.download = `${title}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+async function handleDelete(id) {
+    try {
+        await Storage.deletePortfolio(currentUser.uid, id);
+        portfoliosCache = portfoliosCache.filter(p => p.id !== id);
+        UI.renderDashboard(portfoliosCache);
+        showToast("Portfolio deleted.");
+    } catch (error) {
+        console.error("Delete portfolio error:", error);
+        showAlert("Error", "Could not delete the portfolio. Please try again.");
+    }
 }
 
-async function handleImport() {
+async function handleExport(id) {
+    try {
+        const portfolio = await Storage.getPortfolioById(currentUser.uid, id);
+        const jsonString = JSON.stringify(portfolio, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Export error:", error);
+        showAlert("Error", "Could not export the portfolio.");
+    }
+}
+
+function handleImport() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.json';
     input.onchange = e => {
         const file = e.target.files[0];
-        if (!file) return;
         const reader = new FileReader();
-        reader.onload = async e => {
+        reader.onload = async (event) => {
             try {
-                const importedData = JSON.parse(e.target.result);
-                if (importedData.portfolioTitle && importedData.firstName) {
-                    await Storage.addPortfolio(importedData);
-                    await navigateTo('dashboard');
-                    showToast('Portfolio imported successfully!', 'success');
-                } else {
-                    showAlert('Import Error', 'The selected file is not a valid portfolio.');
-                }
+                const portfolioData = JSON.parse(event.target.result);
+                // Remove old IDs to treat it as a new portfolio
+                delete portfolioData.id;
+                delete portfolioData.createdAt;
+
+                await Storage.addPortfolio(currentUser.uid, portfolioData);
+                navigateTo('dashboard');
+                showToast("Portfolio imported successfully!");
             } catch (error) {
-                showAlert('Import Error', 'Could not parse the file. Please make sure it is a valid portfolio JSON.');
                 console.error("Import error:", error);
+                showAlert("Import Failed", "The selected file is not a valid portfolio JSON file.");
             }
         };
-        reader.readText(file);
+        reader.readAsText(file);
     };
     input.click();
 }
 
-async function navigateTo(view, data = null) {
-    currentView = view;
-    UI.updateHeader(view, data);
 
+async function navigateTo(view, data = null) {
     switch (view) {
         case 'dashboard':
-            const portfolios = await Storage.getPortfolios();
-            UI.renderDashboard(portfolios);
+            portfoliosCache = await Storage.getPortfolios(currentUser.uid);
+            UI.renderDashboard(portfoliosCache);
             UI.showView('dashboard-view');
             break;
         case 'editor':
-             document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
             UI.showView('editor-view');
+            document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
             break;
         case 'preview':
             await UI.renderPortfolioPreview(data);
             UI.showView('preview-view');
             break;
     }
+    UI.updateHeader(view, currentUser);
 }
+
+// --- Start the App ---
+document.addEventListener('DOMContentLoaded', init);
