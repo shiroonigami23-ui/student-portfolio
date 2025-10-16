@@ -80,8 +80,23 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
+    // FIX: Combined event listener for main content area using event delegation
     document.getElementById('main-content').addEventListener('click', async e => {
-        const button = e.target.closest('button');
+        const target = e.target;
+
+        // AI Assist Button logic
+        const aiButton = target.closest('.ai-assist-btn');
+        if (aiButton) {
+            const wrapper = aiButton.closest('.textarea-wrapper');
+            const textarea = wrapper ? wrapper.querySelector('textarea') : null;
+            if (textarea) {
+                UI.showAiModal(textarea);
+            }
+            return; // Stop further processing for this specific click
+        }
+
+        // General button logic
+        const button = target.closest('button');
         if (!button) return;
 
         const { id } = button;
@@ -244,7 +259,6 @@ function handleImport() {
 }
 
 async function navigateTo(view, data = null) {
-    // FIX: Show the correct view immediately before loading its data.
     UI.showView(`${view}-view`);
     UI.updateHeader(view, currentUser);
 
