@@ -1,23 +1,17 @@
-// templates/bold.js
-
-// This module renders the "Bold" portfolio template.
 const showdownConverter = new showdown.Converter();
 
 export function render(data) {
-    const summaryHtml = data.summary ? showdownConverter.makeHtml(data.summary) : '';
-
     return `
         <div class="portfolio-template bold">
             <header class="preview-header">
+                 ${data.profilePic ? `<img src="${data.profilePic}" alt="Profile Picture" class="profile-pic">` : ''}
                 <h1>${data.firstName || ''} ${data.lastName || ''}</h1>
                 <p class="subtitle">${data.portfolioTitle || 'Portfolio'}</p>
                 <p class="contact">${data.email || ''}</p>
             </header>
-
             <section class="preview-summary">
-                ${summaryHtml ? `<div>${summaryHtml}</div>` : ''}
+                ${data.summary ? `<div>${showdownConverter.makeHtml(data.summary)}</div>` : ''}
             </section>
-            
             <section class="preview-experience">
                 <h2>Experience</h2>
                 ${(data.experience || []).map(exp => `
@@ -31,7 +25,6 @@ export function render(data) {
                     </div>
                 `).join('')}
             </section>
-
             <section class="preview-projects">
                 <h2>Projects</h2>
                 ${(data.projects || []).map(p => `
@@ -48,7 +41,6 @@ export function render(data) {
                     </div>
                 `).join('')}
             </section>
-
             <div class="two-column-section">
                 <section class="preview-education">
                     <h2>Education</h2>
@@ -59,7 +51,6 @@ export function render(data) {
                         </div>
                     `).join('')}
                 </section>
-
                 <section class="preview-skills">
                     <h2>Skills</h2>
                     <ul>
