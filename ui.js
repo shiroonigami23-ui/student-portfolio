@@ -3,6 +3,13 @@ import { THEMES } from './config.js';
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 
+// Create a single, reusable instance of the converter
+export const showdownConverter = new showdown.Converter({
+    simpleLineBreaks: true, // Converts single newlines to <br>
+    strikethrough: true,
+    tables: true,
+});
+
 export function showView(viewId) {
     mainContent.querySelectorAll('.view').forEach(view => {
         view.classList.toggle('active', view.id === viewId);
