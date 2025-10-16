@@ -1,5 +1,6 @@
 import { THEMES } from './config.js';
 
+// --- DOM Element Cache ---
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
@@ -12,17 +13,20 @@ export const showdownConverter = new showdown.Converter({
     tables: true,
 });
 
+// =================================================================================
+// --- 3. VIEW MANAGEMENT (THE ROBUST FIX) ---
+// This function is rewritten to be more robust and prevent multiple active views.
+// =================================================================================
 export function showView(viewId) {
-    // --- RACE CONDITION FIX ---
-    // 1. This function is now more robust. It loops through ALL elements
-    //    with the .view class and removes the .active class from them.
+    // STEP A: First, loop through ALL elements with the .view class and
+    // explicitly REMOVE the .active class from them. This guarantees that we
+    // start from a clean slate and prevents the overlapping view bug.
     mainContent.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
 
-    // 2. After all views are hidden, it then adds the .active class to the
-    //    single, targeted viewId. This prevents any possibility of two views
-    //    being active at once.
+    // STEP B: After all other views are hidden, find the single target view
+    // and ADD the .active class to it.
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
@@ -31,10 +35,16 @@ export function showView(viewId) {
     }
 }
 
+
 export function updateHeader(view, user) {
-    headerActions.innerHTML = '';
+    headerActions.innerHTML = ''; // Clear previous state
+
     if (user) {
-        const themeSelectHTML = `<select id="theme-select" title="Change Theme">${Object.entries(THEMES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>`;
+        const themeSelectHTML = `
+            <select id="theme-select" title="Change Theme">
+                ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
+            </select>`;
+
         let buttonsHTML = '';
         if (view === 'editor' || view === 'preview') {
             buttonsHTML = `<button id="back-to-dashboard-btn">Dashboard</button>`;
@@ -42,6 +52,7 @@ export function updateHeader(view, user) {
         if (view === 'preview') {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         }
+
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
@@ -49,6 +60,7 @@ export function updateHeader(view, user) {
                 <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar" referrerpolicy="no-referrer">
                 <button id="logout-btn">Logout</button>
             </div>`;
+        
         const themeSelectElement = document.getElementById('theme-select');
         if (themeSelectElement) {
             themeSelectElement.value = localStorage.getItem('theme') || 'theme-space';
@@ -74,13 +86,17 @@ export function renderDashboard(portfolios) {
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
                 <button data-action="delete" data-id="${p.id}" class="delete-btn">Delete</button>
             </div>
-        </div>`).join('');
+        </div>
+    `).join('');
 }
 
+
+// --- Portfolio Rendering ---
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
     try {
+        // Use dynamic import to load only the template needed.
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
@@ -96,10 +112,12 @@ export function downloadAsPDF() {
     html2pdf().from(content).set(opt).save();
 }
 
+// --- Theming ---
 export function applyTheme(themeName) {
     document.body.className = themeName || 'theme-space';
 }
 
+// --- AI Modal ---
 export function showAiModal(textareaElement) {
     activeAiTextarea = textareaElement;
     setAiModalState('options');
@@ -119,21 +137,19 @@ export function setAiModalState(state, text = '') {
     const options = aiModalOverlay.querySelector('#ai-modal-options');
     const loading = aiModalOverlay.querySelector('#ai-modal-loading');
     const result = aiModalOverlay.querySelector('#ai-modal-result');
-    
     options.style.display = 'none';
     loading.style.display = 'none';
     result.style.display = 'none';
 
-    if (state === 'options') {
-        options.style.display = 'block';
-    } else if (state === 'loading') {
-        loading.style.display = 'block';
-    } else if (state === 'result') {
+    if (state === 'options') options.style.display = 'block';
+    else if (state === 'loading') loading.style.display = 'block';
+    else if (state === 'result') {
         result.style.display = 'block';
         document.getElementById('ai-result-textarea').value = text;
     }
 }
 
+// --- Share Modal ---
 export function showShareModal(portfolioId, isPublic) {
     const shareLinkInput = document.getElementById('share-link-input');
     const shareModalActions = document.getElementById('share-modal-actions');
@@ -141,6 +157,7 @@ export function showShareModal(portfolioId, isPublic) {
     const link = `${window.location.origin}${window.location.pathname}?id=${portfolioId}`;
     shareLinkInput.value = link;
     shareLinkInput.style.display = isPublic ? 'block' : 'none';
+
     if (isPublic) {
         modalTitle.textContent = "Your Portfolio is Public";
         shareModalActions.innerHTML = `<button id="copy-link-btn" class="primary-btn">Copy Link</button><button id="make-private-btn">Make Private</button><button id="close-share-btn">Close</button>`;
