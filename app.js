@@ -1,5 +1,5 @@
 // --- IMPORTS ---
-import { auth, db } from './firebase.js';
+import { auth } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
@@ -56,11 +56,11 @@ async function handleGoogleSignIn() {
     try {
         const result = await signInWithPopup(auth, provider);
         console.log("Sign-in successful!", result.user);
-        // onAuthStateChanged will handle the rest.
+        // onAuthStateChanged will handle the rest of the UI updates.
     } catch (error) {
         console.error("Google Sign-In Error:", error);
         if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/auth-domain-config-error') {
-             showAlert("Sign-In Configuration Error", "Please ensure that your domain (localhost) is added to the 'Authorized domains' list in your Firebase Authentication settings.");
+             showAlert("Sign-In Configuration Error", "Please ensure that your domain (e.g., localhost, your-site.github.io) is added to the 'Authorized domains' list in your Firebase Authentication settings.");
         } else {
             showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
         }
@@ -81,30 +81,26 @@ async function handleLogout() {
 // --- EVENT LISTENERS ---
 function setupEventListeners() {
 
-    // Main Content Event Delegation
+    // Main Content Event Delegation for better performance
     document.getElementById('main-content').addEventListener('click', async e => {
-        const targetId = e.target.id;
         const target = e.target.closest('button');
+        if (!target) return; // Exit if the click wasn't on or in a button
 
-        if (targetId === 'google-signin-btn') {
-            handleGoogleSignIn();
-        }
-        
-        if (targetId === 'create-new-btn' || targetId === 'import-portfolio-btn') {
-            if (targetId === 'create-new-btn') {
-                currentlyEditingId = null;
-                Editor.resetForm();
-                navigateTo('editor');
-            } else {
-                handleImport();
-            }
-        }
-        
-        if (target) {
-            const action = target.dataset.action;
-            const id = target.dataset.id;
-            if (!action || !id) return;
+        const targetId = target.id;
+        const action = target.dataset.action;
+        const id = target.dataset.id;
 
+        // Login / Create / Import
+        if (targetId === 'google-signin-btn') return handleGoogleSignIn();
+        if (targetId === 'create-new-btn') {
+            currentlyEditingId = null;
+            Editor.resetForm();
+            return navigateTo('editor');
+        }
+        if (targetId === 'import-portfolio-btn') return handleImport();
+        
+        // Portfolio Card Actions
+        if (action && id) {
             switch(action) {
                 case 'edit':
                     currentlyEditingId = id;
@@ -139,7 +135,6 @@ function setupEventListeners() {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
             UI.applyTheme(newTheme);
-            // In a full app, this would be saved to user preferences in Firestore
         }
     });
     
@@ -160,34 +155,36 @@ function setupEventListeners() {
 
     document.getElementById('ai-modal').addEventListener('click', async (e) => {
         const action = e.target.dataset.action;
-        if (!action) return;
+        if (!action || !activeTextarea) return;
 
         const originalText = activeTextarea.value;
-        UI.setAiModalState('loading');
         let newText = originalText;
 
-        try {
-            if (action === 'improve') {
-                newText = await improveWithAI(originalText);
-            } else if (action === 'bullets') {
-                newText = await generateBulletPoints(originalText);
+        if (action === 'improve' || action === 'bullets') {
+            UI.setAiModalState('loading');
+            try {
+                if (action === 'improve') {
+                    newText = await improveWithAI(originalText);
+                } else if (action === 'bullets') {
+                    newText = await generateBulletPoints(originalText);
+                }
+                
+                if (newText && newText !== originalText) {
+                    activeTextarea.value = newText;
+                    activeTextarea.dispatchEvent(new Event('input', { bubbles: true })); // Trigger validation
+                }
+                UI.setAiModalState('result'); // Show result/options
+            } catch (error) {
+                console.error("AI Assist Error:", error);
+                showAlert("AI Error", "Could not process the request. Please check your API key and try again.");
+                UI.setAiModalState('options'); // Reset on error
             }
-             if (newText && newText !== originalText) {
-                activeTextarea.value = newText;
-                // Trigger input event for live validation
-                activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            UI.setAiModalState('result');
-        } catch (error) {
-            console.error("AI Assist Error:", error);
-            showAlert("AI Error", "Could not process the request. Please check your API key and try again.");
-            UI.setAiModalState('options'); // Reset on error
-        }
-
-        if (action === 'close' || action === 'use-text') {
+        } else if (action === 'close' || action === 'use-text') {
             UI.hideAiModal();
-             // After a short delay, reset the modal for the next use
-            setTimeout(() => UI.setAiModalState('options'), 300);
+            setTimeout(() => {
+                UI.setAiModalState('options');
+                activeTextarea = null; // Clear active textarea
+            }, 300);
         }
     });
 }
@@ -256,12 +253,12 @@ function handleImport() {
     input.accept = '.json';
     input.onchange = e => {
         const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = async (event) => {
             try {
                 const portfolioData = JSON.parse(event.target.result);
-                // Remove old IDs to treat it as a new portfolio
-                delete portfolioData.id;
+                delete portfolioData.id; // Treat as a new portfolio
                 delete portfolioData.createdAt;
 
                 await Storage.addPortfolio(currentUser.uid, portfolioData);
@@ -279,22 +276,23 @@ function handleImport() {
 
 
 async function navigateTo(view, data = null) {
+    UI.updateHeader(view, currentUser);
     switch (view) {
         case 'dashboard':
+            // Refetch data every time we navigate to dashboard to ensure it's fresh
             portfoliosCache = await Storage.getPortfolios(currentUser.uid);
             UI.renderDashboard(portfoliosCache);
             UI.showView('dashboard-view');
             break;
         case 'editor':
-            UI.showView('editor-view');
             document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
+            UI.showView('editor-view');
             break;
         case 'preview':
             await UI.renderPortfolioPreview(data);
             UI.showView('preview-view');
             break;
     }
-    UI.updateHeader(view, currentUser);
 }
 
 // --- Start the App ---
