@@ -20,7 +20,6 @@
     display: none !important;
 }
 
-
 /* --- THEME DEFINITIONS --- */
 body.theme-space {
     --bg-primary: #0D1117;
@@ -44,7 +43,72 @@ body.theme-day {
     --border-color: rgba(0, 0, 0, 0.12);
     --glow-color: rgba(25, 118, 210, 0.2);
 }
-/* ... (Other themes from your file are preserved here) ... */
+body.theme-night {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-glass: rgba(22, 33, 62, 0.7);
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0d0;
+    --accent-primary: #0f3460;
+    --accent-secondary: #e94560;
+    --border-color: rgba(160, 160, 208, 0.3);
+    --glow-color: rgba(233, 69, 96, 0.2);
+}
+body.theme-warm {
+    --bg-primary: #fffaf0;
+    --bg-secondary: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    --text-primary: #5c4033;
+    --text-secondary: #a0522d;
+    --accent-primary: #d2691e;
+    --accent-secondary: #8b4513;
+    --border-color: rgba(139, 69, 19, 0.2);
+    --glow-color: rgba(210, 105, 30, 0.2);
+}
+body.theme-forest {
+    --bg-primary: #2d3a32;
+    --bg-secondary: #394a3e;
+    --bg-glass: rgba(57, 74, 62, 0.7);
+    --text-primary: #e8f5e9;
+    --text-secondary: #a5d6a7;
+    --accent-primary: #66bb6a;
+    --accent-secondary: #a1887f;
+    --border-color: rgba(165, 214, 167, 0.3);
+    --glow-color: rgba(102, 187, 106, 0.2);
+}
+body.theme-ocean {
+    --bg-primary: #e0f7fa;
+    --bg-secondary: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    --text-primary: #004d40;
+    --text-secondary: #00796b;
+    --accent-primary: #00acc1;
+    --accent-secondary: #fbc02d;
+    --border-color: rgba(0, 121, 107, 0.2);
+    --glow-color: rgba(0, 172, 193, 0.2);
+}
+body.theme-mint {
+    --bg-primary: #f1f8f6;
+    --bg-secondary: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    --text-primary: #26a69a;
+    --text-secondary: #80cbc4;
+    --accent-primary: #00897b;
+    --accent-secondary: #ffab40;
+    --border-color: rgba(0, 137, 123, 0.2);
+    --glow-color: rgba(0, 137, 123, 0.2);
+}
+body.theme-sunset {
+    --bg-primary: #2c2541;
+    --bg-secondary: #3a3153;
+    --bg-glass: rgba(58, 49, 83, 0.7);
+    --text-primary: #f5f5f5;
+    --text-secondary: #d1c4e9;
+    --accent-primary: #ff8a65;
+    --accent-secondary: #ba68c8;
+    --border-color: rgba(209, 196, 233, 0.3);
+    --glow-color: rgba(255, 138, 101, 0.2);
+}
 
 /* --- GENERAL LAYOUT & TYPOGRAPHY --- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -114,13 +178,13 @@ h3 { font-size: 1.25rem; }
 .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 #portfolio-form { background: var(--bg-secondary); padding: 2.5rem; border-radius: var(--border-radius-md); }
 .form-step { 
-    display: none; /* FIX: Hide form steps by default */
+    display: none;
     border-bottom: 1px solid var(--border-color); 
     padding-bottom: 1.5rem; 
     margin-bottom: 1.5rem; 
 }
 .form-step.active {
-    display: block; /* FIX: Show only the active step */
+    display: block;
     animation: fadeIn 0.5s ease-in-out;
 }
 .form-step h3 { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; font-size: 1.5rem; }
