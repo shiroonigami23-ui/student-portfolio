@@ -1,7 +1,7 @@
-import * as UI from '/ui.js';
-import * as Editor from '/editor.js';
-import * as Portfolio from '/portfolio.js';
-import * as Storage from '/storage.js';
+import * as UI from './ui.js';
+import * as Editor from './editor.js';
+import * as Portfolio from './portfolio.js';
+import * as Storage from './storage.js';
 
 // --- State ---
 let currentView = 'dashboard';
