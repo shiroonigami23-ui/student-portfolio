@@ -263,24 +263,25 @@ h2 {
 }
 
 .item-editor {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    align-items: center;
     margin-bottom: 1rem;
     padding: 1rem;
     background: var(--bg-primary);
     border-radius: var(--border-radius-sm);
-}
-.item-editor.project-editor{
-    grid-template-columns: 1fr;
-}
-.item-editor.project-editor input,
-.item-editor.project-editor textarea {
-    grid-column: 1 / -1;
+    cursor: grab;
 }
 
-/* --- PREVIEW VIEW --- */
+.inline-inputs {
+    display: flex;
+    gap: 1rem;
+}
+.inline-inputs > input {
+    margin-bottom: 0;
+}
+
+/* --- PREVIEW VIEW & TEMPLATES --- */
 #portfolio-preview-content {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -288,7 +289,25 @@ h2 {
     padding: 2rem;
     min-height: 50vh;
 }
-/* Template-specific styles will be injected by JS */
+.portfolio-template h1, .portfolio-template h2, .portfolio-template h3, .portfolio-template h4 {
+    color: var(--text-primary);
+}
+.portfolio-template h1 { font-size: 2.5em; margin-bottom: 0.1em; }
+.portfolio-template h2 { font-size: 1.5em; color: var(--text-secondary); margin-bottom: 0.5em;}
+.portfolio-template h3 { font-size: 1.4em; margin-bottom: 1em; border-bottom: 2px solid var(--accent-primary); padding-bottom: 0.3em; }
+.portfolio-template h4 { font-size: 1.1em; color: var(--accent-primary); margin-bottom: 0.25em;}
+.portfolio-template h4 span { color: var(--text-secondary); font-weight: normal; }
+.portfolio-template .preview-header { text-align: center; margin-bottom: 2rem; }
+.portfolio-template section { margin-bottom: 2.5rem; }
+.portfolio-template hr { display: none; } /* Hide hr, use h3 border instead */
+.portfolio-template .item, .portfolio-template .project-item { margin-bottom: 1.5rem; }
+.portfolio-template .dates { font-style: italic; color: var(--text-secondary); font-size: 0.9em; margin-bottom: 0.5em; }
+.portfolio-template .preview-skills ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.portfolio-template .preview-skills li { background: var(--bg-primary); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-color); }
+.portfolio-template .project-links { margin-top: 0.75rem; display: flex; gap: 1rem; }
+.portfolio-template .project-links a { color: var(--accent-primary); text-decoration: none; font-weight: 600; }
+.portfolio-template .project-links a:hover { text-decoration: underline; }
+.portfolio-template .tech { font-size: 0.9em; color: var(--text-secondary); }
 
 
 /* --- FORM ELEMENTS & BUTTONS --- */
@@ -351,12 +370,12 @@ button:hover, .primary-btn:hover {
     background-color: #e94560;
     color: #fff;
     border-color: #e94560;
+    align-self: flex-end; /* Pushes delete button to the right */
 }
 
 .delete-btn:hover {
     filter: brightness(1.1);
 }
-
 
 button:disabled {
     opacity: 0.5;
@@ -384,20 +403,7 @@ button:disabled {
     h2 {
         font-size: 1.5rem;
     }
-    .item-editor {
-        grid-template-columns: 1fr;
+    .inline-inputs {
+        flex-direction: column;
     }
-    .item-editor .delete-btn {
-        grid-row: 3;
-    }
-}
-/* --- Add this block to the end of your style.css file --- */
-
-.delete-btn {
-    padding: 0.5rem 1rem; /* Adjust padding for smaller buttons in forms */
-}
-
-.item-delete-btn {
-    justify-self: end; /* Aligns the delete button to the right in the grid */
-    align-self: center; /* Vertically centers the button */
 }
