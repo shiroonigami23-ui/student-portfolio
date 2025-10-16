@@ -12,6 +12,7 @@ let currentUser = null;
 let currentlyEditingId = null;
 let portfoliosCache = [];
 
+// --- APPLICATION INITIALIZATION ---
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const publicId = urlParams.get('id');
@@ -21,51 +22,40 @@ async function init() {
         return;
     }
 
-    // --- MAJOR FIX ---
-    // Set a definite starting state. Show the login view by default
-    // before waiting for the asynchronous authentication check.
+    // --- THE DEFINITIVE FIX FOR THE LOGIN SCREEN ---
+    // 1. Establish a clear, non-ambiguous starting state for the UI.
+    //    We explicitly show the login view FIRST, before doing anything else.
+    //    This prevents any flicker or race conditions.
     UI.showView('login-view');
+    UI.updateHeader('login', null);
 
     Editor.init();
     Editor.setupLiveValidation();
 
+    // 2. Set up the listener that will react to Firebase's authentication check.
     onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            // Now that Firebase has confirmed a user is logged in,
-            // switch definitively to the dashboard.
-            UI.showView('dashboard-view');
-            UI.updateHeader('dashboard', user);
-            UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
-            portfoliosCache = await Storage.getPortfolios(user.uid);
-            UI.renderDashboard(portfoliosCache);
+            // 3. Firebase has now confirmed a user is logged in.
+            //    We can now definitively switch to the dashboard.
+            await handleUserLoggedIn(user);
         } else {
-            // If there's no user, ensure the login view is shown.
+            // 4. Firebase has confirmed NO user is logged in.
             handleUserLoggedOut();
         }
     });
-    
-    setupEventListeners();
+
+    setupAllEventListeners();
 }
 
-async function handlePublicView(portfolioId) {
-    const appContainer = document.getElementById('app-container');
-    document.getElementById('app-header').innerHTML = '';
+// --- CORE LOGIC FUNCTIONS ---
 
-    const portfolioData = await Storage.getPublicPortfolioById(portfolioId);
-
-    if (portfolioData) {
-        appContainer.innerHTML = `
-            <main id="main-content">
-                <div id="preview-view" class="view active">
-                    <div id="portfolio-preview-content"></div>
-                </div>
-            </main>`;
-        UI.applyTheme(portfolioData.theme || 'theme-space');
-        await UI.renderPortfolioPreview(portfolioData);
-    } else {
-        appContainer.innerHTML = `<p class="error-message">Sorry, this portfolio could not be found or is not public.</p>`;
-    }
+async function handleUserLoggedIn(user) {
+    UI.showView('dashboard-view');
+    UI.updateHeader('dashboard', user);
+    UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
+    portfoliosCache = await Storage.getPortfolios(user.uid);
+    UI.renderDashboard(portfoliosCache);
 }
 
 function handleUserLoggedOut() {
@@ -75,124 +65,131 @@ function handleUserLoggedOut() {
     UI.showView('login-view');
 }
 
-async function handleGoogleSignIn() {
-    const provider = new GoogleAuthProvider();
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        showAlert("Sign-In Failed", `An error occurred: ${error.message}`);
+async function handlePublicView(portfolioId) {
+    const appContainer = document.getElementById('app-container');
+    document.getElementById('app-header').innerHTML = '';
+    const portfolioData = await Storage.getPublicPortfolioById(portfolioId);
+    if (portfolioData) {
+        appContainer.innerHTML = `<main id="main-content"><div id="preview-view" class="view active"><div id="portfolio-preview-content"></div></div></main>`;
+        UI.applyTheme(portfolioData.theme || 'theme-space');
+        await UI.renderPortfolioPreview(portfolioData);
+    } else {
+        appContainer.innerHTML = `<p class="error-message">Sorry, this portfolio could not be found or is not public.</p>`;
     }
 }
 
-async function handleLogout() {
-    await signOut(auth);
+// --- EVENT LISTENERS SETUP ---
+function setupAllEventListeners() {
+    // Handles all clicks within the main content area
+    document.getElementById('main-content').addEventListener('click', mainContentClickHandler);
+    // Handles clicks within the header
+    document.getElementById('header-actions').addEventListener('click', headerClickHandler);
+    // Handles theme changes from the header dropdown
+    document.getElementById('header-actions').addEventListener('change', headerChangeHandler);
+    // Handles all clicks within the Share Modal
+    document.getElementById('share-modal-overlay').addEventListener('click', shareModalClickHandler);
+    // --- THE DEFINITIVE FIX FOR THE AI MODAL ---
+    // Handles all clicks within the AI Modal
+    document.getElementById('ai-modal-overlay').addEventListener('click', aiModalClickHandler);
 }
 
-function setupEventListeners() {
-    document.getElementById('main-content').addEventListener('click', async e => {
-        const target = e.target;
-        const aiButton = target.closest('.ai-assist-btn');
-        if (aiButton) {
-            const wrapper = aiButton.closest('.textarea-wrapper');
-            const textarea = wrapper ? wrapper.querySelector('textarea') : null;
-            if (textarea) UI.showAiModal(textarea);
-            return;
+// --- EVENT HANDLER FUNCTIONS ---
+
+async function mainContentClickHandler(e) {
+    const target = e.target;
+    // AI Assist Button
+    if (target.closest('.ai-assist-btn')) {
+        const textarea = target.closest('.textarea-wrapper')?.querySelector('textarea');
+        if (textarea) UI.showAiModal(textarea);
+        return;
+    }
+    // All other buttons
+    const button = target.closest('button');
+    if (!button) return;
+    const { id } = button;
+    const { action, id: dataId } = button.dataset;
+    if (id === 'google-signin-btn') await signInWithPopup(auth, new GoogleAuthProvider()).catch(err => showAlert("Sign-In Failed", err.message));
+    if (id === 'create-new-btn') navigateToEditor();
+    if (id === 'import-portfolio-btn') handleImport();
+    if (id === 'save-portfolio-btn') await handleSavePortfolio();
+    if (id === 'cancel-edit-btn') navigateTo('dashboard');
+    if (action === 'edit') navigateToEditor(dataId);
+    if (action === 'delete') showConfirmation("Delete Portfolio?", "This cannot be undone.", () => handleDelete(dataId));
+    if (action === 'preview') {
+        const portfolio = portfoliosCache.find(p => p.id === dataId);
+        if (portfolio) navigateTo('preview', portfolio);
+    }
+    if (action === 'share') {
+        const portfolio = portfoliosCache.find(p => p.id === dataId);
+        if (portfolio) {
+            currentlyEditingId = dataId;
+            UI.showShareModal(dataId, portfolio.isPublic);
         }
-
-        const button = target.closest('button');
-        if (!button) return;
-
-        const { id } = button;
-        const { action, id: dataId } = button.dataset;
-
-        if (id === 'google-signin-btn') return handleGoogleSignIn();
-        if (id === 'create-new-btn') return navigateToEditor();
-        if (id === 'import-portfolio-btn') return handleImport();
-        if (id === 'save-portfolio-btn') return handleSavePortfolio();
-        if (id === 'cancel-edit-btn') return navigateTo('dashboard');
-
-        if (action && dataId) {
-            switch (action) {
-                case 'edit': return navigateToEditor(dataId);
-                case 'delete': return showConfirmation("Delete Portfolio?", "This cannot be undone.", () => handleDelete(dataId));
-                case 'preview':
-                    const portfolio = portfoliosCache.find(p => p.id === dataId);
-                    if (portfolio) navigateTo('preview', portfolio);
-                    break;
-                case 'share':
-                    const portfolioToShare = portfoliosCache.find(p => p.id === dataId);
-                    if (portfolioToShare) {
-                        currentlyEditingId = dataId;
-                        UI.showShareModal(dataId, portfolioToShare.isPublic);
-                    }
-                    break;
-            }
-        }
-    });
-
-    document.getElementById('header-actions').addEventListener('click', e => {
-        const button = e.target.closest('button');
-        if (!button) return;
-        if (button.id === 'logout-btn') handleLogout();
-        if (button.id === 'back-to-dashboard-btn') navigateTo('dashboard');
-        if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
-    });
-    
-    document.getElementById('header-actions').addEventListener('change', e => {
-        if (e.target.id === 'theme-select') {
-            const newTheme = e.target.value;
-            UI.applyTheme(newTheme);
-            localStorage.setItem('theme', newTheme);
-        }
-    });
-
-    document.getElementById('share-modal-overlay').addEventListener('click', async e => {
-        const button = e.target.closest('button');
-        if (!button) return;
-        const { id } = button;
-        const portfolio = portfoliosCache.find(p => p.id === currentlyEditingId);
-        if (!portfolio && id !== 'close-share-btn') return;
-        switch (id) {
-            case 'make-public-btn':
-                await Storage.makePortfolioPublic(currentlyEditingId, portfolio);
-                showToast('Portfolio is now public!', 'success');
-                navigateTo('dashboard');
-                UI.hideShareModal();
-                break;
-            case 'make-private-btn':
-                await Storage.makePortfolioPrivate(currentlyEditingId);
-                showToast('Portfolio is now private.');
-                navigateTo('dashboard');
-                UI.hideShareModal();
-                break;
-            case 'copy-link-btn':
-                navigator.clipboard.writeText(document.getElementById('share-link-input').value)
-                    .then(() => showToast('Link copied!'));
-                break;
-            case 'close-share-btn':
-                UI.hideShareModal();
-                break;
-        }
-    });
-    
-    document.getElementById('ai-modal-overlay').addEventListener('click', async e => {
-        const button = e.target.closest('button');
-        if (!button) return;
-        const { action } = button.dataset;
-
-        const originalText = UI.getActiveAiTextarea().value;
-        if (action === 'improve' || action === 'bullets') {
-            UI.setAiModalState('loading');
-            const newText = action === 'improve' ? await improveWriting(originalText) : await generateBulletPoints(originalText);
-            UI.setAiModalState('result', newText);
-        } else if (action === 'use-text') {
-            UI.getActiveAiTextarea().value = document.getElementById('ai-result-textarea').value;
-            UI.hideAiModal();
-        } else if (action === 'close') {
-            UI.hideAiModal();
-        }
-    });
+    }
 }
+
+async function headerClickHandler(e) {
+    const button = e.target.closest('button');
+    if (!button) return;
+    if (button.id === 'logout-btn') await signOut(auth);
+    if (button.id === 'back-to-dashboard-btn') navigateTo('dashboard');
+    if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
+}
+
+function headerChangeHandler(e) {
+    if (e.target.id === 'theme-select') {
+        const newTheme = e.target.value;
+        UI.applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+}
+
+async function shareModalClickHandler(e) {
+    const button = e.target.closest('button');
+    if (!button) return;
+    const { id } = button;
+    if (id === 'close-share-btn') {
+        UI.hideShareModal();
+        return;
+    }
+    const portfolio = portfoliosCache.find(p => p.id === currentlyEditingId);
+    if (!portfolio) return;
+    if (id === 'make-public-btn') {
+        await Storage.makePortfolioPublic(currentlyEditingId, portfolio);
+        showToast('Portfolio is now public!', 'success');
+        navigateTo('dashboard');
+        UI.hideShareModal();
+    } else if (id === 'make-private-btn') {
+        await Storage.makePortfolioPrivate(currentlyEditingId);
+        showToast('Portfolio is now private.');
+        navigateTo('dashboard');
+        UI.hideShareModal();
+    } else if (id === 'copy-link-btn') {
+        navigator.clipboard.writeText(document.getElementById('share-link-input').value).then(() => showToast('Link copied!'));
+    }
+}
+
+async function aiModalClickHandler(e) {
+    const button = e.target.closest('button');
+    if (!button) return;
+    const { action } = button.dataset;
+    const activeTextarea = UI.getActiveAiTextarea();
+    if (!activeTextarea) return;
+
+    if (action === 'improve' || action === 'bullets') {
+        UI.setAiModalState('loading');
+        const originalText = activeTextarea.value;
+        const newText = action === 'improve' ? await improveWriting(originalText) : await generateBulletPoints(originalText);
+        UI.setAiModalState('result', newText);
+    } else if (action === 'use-text') {
+        activeTextarea.value = document.getElementById('ai-result-textarea').value;
+        UI.hideAiModal();
+    } else if (action === 'close') {
+        UI.hideAiModal();
+    }
+}
+
+// --- Navigation and Data Handling ---
 
 async function navigateToEditor(id = null) {
     currentlyEditingId = id;
@@ -211,7 +208,6 @@ async function handleSavePortfolio() {
     if (errors.length > 0) {
         return showAlert("Invalid Input", errors.map(e => e.message).join('\n'));
     }
-
     try {
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
@@ -262,26 +258,18 @@ function handleImport() {
 async function navigateTo(view, data = null) {
     UI.showView(`${view}-view`);
     UI.updateHeader(view, currentUser);
-
-    if (view === 'preview' && data && data.theme) {
+    if (view === 'preview' && data?.theme) {
         UI.applyTheme(data.theme);
     } else {
         UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
     }
-
-    switch (view) {
-        case 'dashboard':
-            portfoliosCache = await Storage.getPortfolios(currentUser.uid);
-            UI.renderDashboard(portfoliosCache);
-            break;
-        case 'editor':
-            document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
-            break;
-        case 'preview':
-            if (data) {
-                await UI.renderPortfolioPreview(data);
-            }
-            break;
+    if (view === 'dashboard') {
+        portfoliosCache = await Storage.getPortfolios(currentUser.uid);
+        UI.renderDashboard(portfoliosCache);
+    } else if (view === 'editor') {
+        document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
+    } else if (view === 'preview' && data) {
+        await UI.renderPortfolioPreview(data);
     }
 }
 
