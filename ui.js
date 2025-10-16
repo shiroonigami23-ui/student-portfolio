@@ -91,13 +91,38 @@ export function renderPortfolioPreview(data) {
                 <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
                 <div>${summaryHtml}</div>
             </section>
+
+            <section class="preview-experience" style="margin-bottom: 2rem;">
+                <h3>Work Experience</h3>
+                <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
+                ${(data.experience || []).map(exp => `
+                    <div class="item" style="margin-bottom: 1.5rem;">
+                        <h4 style="color: var(--accent-primary);">${exp.title} <span style="color: var(--text-secondary); font-weight: normal;">at ${exp.company}</span></h4>
+                        <p style="font-style: italic; color: var(--text-secondary); font-size: 0.9em;">${exp.dates}</p>
+                        <div>${showdownConverter.makeHtml(exp.description)}</div>
+                    </div>
+                `).join('')}
+            </section>
+            
+            <section class="preview-education" style="margin-bottom: 2rem;">
+                <h3>Education</h3>
+                <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
+                 ${(data.education || []).map(edu => `
+                    <div class="item" style="margin-bottom: 1rem;">
+                        <h4 style="color: var(--accent-primary);">${edu.degree}</h4>
+                        <p style="color: var(--text-secondary);">${edu.institution} - ${edu.year}</p>
+                    </div>
+                `).join('')}
+            </section>
+
             <section class="preview-skills" style="margin-bottom: 2rem;">
                 <h3>Skills</h3>
                  <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                <ul style="list-style: none; padding: 0;">
-                    ${(data.skills || []).map(s => `<li style="margin-bottom: 0.5rem;"><strong>${s.name}</strong> - ${s.level}</li>`).join('')}
+                <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px;">
+                    ${(data.skills || []).map(s => `<li style="background: var(--bg-primary); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-color);">${s.name} (${s.level})</li>`).join('')}
                 </ul>
             </section>
+
             <section class="preview-projects">
                 <h3>Projects</h3>
                  <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
