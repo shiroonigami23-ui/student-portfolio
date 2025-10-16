@@ -1,29 +1,24 @@
 import { db, auth } from './firebase.js';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
-// Gets the reference to the current user's portfolios collection
-function getUserPortfoliosRef() {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return null;
+function getUserPortfoliosRef(userId) {
+    if (!userId) throw new Error("User not authenticated.");
     return collection(db, 'users', userId, 'portfolios');
 }
 
-export async function getPortfolios() {
-    const portfoliosRef = getUserPortfoliosRef();
-    if (!portfoliosRef) return [];
-    
+export async function getPortfolios(userId) {
+    const portfoliosRef = getUserPortfoliosRef(userId);
     try {
         const snapshot = await getDocs(portfoliosRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error("Error fetching portfolios:", error);
-        return [];
+        throw error;
     }
 }
 
-export async function getPortfolioById(id) {
-     const userId = auth.currentUser?.uid;
+export async function getPortfolioById(userId, id) {
     if (!userId) return null;
     try {
         const docRef = doc(db, 'users', userId, 'portfolios', id);
@@ -31,57 +26,47 @@ export async function getPortfolioById(id) {
         return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
     } catch (error) {
         console.error("Error fetching portfolio by ID:", error);
-        return null;
+        throw error;
     }
 }
 
-export async function addPortfolio(portfolioData) {
-    const portfoliosRef = getUserPortfoliosRef();
-    if (!portfoliosRef) throw new Error("User not authenticated.");
-
+export async function addPortfolio(userId, portfolioData) {
+    const portfoliosRef = getUserPortfoliosRef(userId);
+    // Use the logic from portfolio.js to create a structured object
     const newPortfolio = createPortfolio(portfolioData);
     try {
         const docRef = await addDoc(portfoliosRef, newPortfolio);
         return docRef.id;
     } catch (error) {
         console.error("Error adding portfolio:", error);
+        throw error;
     }
 }
 
-export async function updatePortfolio(updatedData) {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated.");
-
-    const docRef = doc(db, 'users', userId, 'portfolios', updatedData.id);
-    const existingData = await getPortfolioById(updatedData.id);
+export async function updatePortfolio(userId, id, updatedData) {
+    const docRef = doc(db, 'users', userId, 'portfolios', id);
+    const existingData = await getPortfolioById(userId, id);
+    // Use the logic from portfolio.js to prepare the update
     const dataToUpdate = updatePortfolioObject(existingData, updatedData);
     
+    // Remove properties that shouldn't be in the final update payload
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+
     try {
-        // We need to remove the id from the object before sending to firestore
-        const { id, ...updatePayload } = dataToUpdate;
-        await updateDoc(docRef, updatePayload);
+        await updateDoc(docRef, dataToUpdate);
     } catch (error) {
         console.error("Error updating portfolio:", error);
+        throw error;
     }
 }
 
-export async function deletePortfolio(id) {
-    const userId = auth.currentUser?.uid;
-    if (!userId) throw new Error("User not authenticated.");
-    
+export async function deletePortfolio(userId, id) {
     const docRef = doc(db, 'users', userId, 'portfolios', id);
     try {
         await deleteDoc(docRef);
     } catch (error) {
         console.error("Error deleting portfolio:", error);
+        throw error;
     }
-}
-
-// Local theme storage remains, as it's a UI preference, not core data.
-const THEME_KEY = 'portfolioApp.theme';
-export function saveTheme(theme) {
-    localStorage.setItem(THEME_KEY, theme);
-}
-export function getTheme() {
-    return localStorage.getItem(THEME_KEY) || 'theme-space';
 }
