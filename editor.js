@@ -127,7 +127,7 @@ export function collectFormData() {
         year: card.querySelector('[name="gradYear"]').value
     }));
     data.skills = mapEditorItems('#skills-editor', card => ({
-        name: card.querySelector('[name.name="skillName"]').value,
+        name: card.querySelector('[name="skillName"]').value,
         level: card.querySelector('[name="skillLevel"]').value
     }));
     data.projects = mapEditorItems('#projects-editor', card => ({
@@ -198,7 +198,10 @@ function addWorkItem(exp = { title: '', company: '', dates: '', description: '' 
         <input type="text" name="jobTitle" placeholder="Job Title" value="${exp.title}">
         <input type="text" name="company" placeholder="Company" value="${exp.company}">
         <input type="text" name="jobDates" placeholder="Start - End Dates" value="${exp.dates}">
-        <textarea name="jobDescription" placeholder="Job Description (Markdown supported)">${exp.description}</textarea>
+        <div class="textarea-wrapper">
+            <textarea name="jobDescription" placeholder="Job Description (Markdown supported)">${exp.description}</textarea>
+            <button type="button" class="ai-assist-btn" data-target-name="jobDescription" title="AI Assist">✨</button>
+        </div>
         <button type="button" class="delete-btn item-delete-btn">Delete</button>
     `);
 }
@@ -228,7 +231,10 @@ function addSkillItem(skill = { name: '', level: 'Intermediate' }) {
 function addProjectItem(p = { title: '', description: '', technologies: '', liveUrl: '', repoUrl: '' }) {
     createDeletableItem(document.getElementById('projects-editor'), `
         <input type="text" name="projectTitle" placeholder="Project Title" value="${p.title}">
-        <textarea name="projectDescription" placeholder="Project Description (Markdown supported)">${p.description}</textarea>
+         <div class="textarea-wrapper">
+            <textarea name="projectDescription" placeholder="Project Description (Markdown supported)">${p.description}</textarea>
+            <button type="button" class="ai-assist-btn" data-target-name="projectDescription" title="AI Assist">✨</button>
+        </div>
         <input type="text" name="projectTech" placeholder="Technologies (comma-separated)" value="${p.technologies}">
         <div class="inline-inputs">
             <input type="text" name="projectLiveUrl" placeholder="Live Demo URL" value="${p.liveUrl}">
