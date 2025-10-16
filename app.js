@@ -24,23 +24,15 @@ async function init() {
     Editor.init();
     Editor.setupLiveValidation();
 
-    // --- MAJOR FIX ---
-    // The authentication logic is now more direct to prevent race conditions.
     onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            // This logic now runs directly when the user is confirmed.
-            // 1. Immediately switch to the dashboard view.
             UI.showView('dashboard-view');
-            // 2. Update the header for an authenticated user.
             UI.updateHeader('dashboard', user);
-            // 3. Apply the correct theme.
             UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
-            // 4. THEN, fetch the portfolio data.
             portfoliosCache = await Storage.getPortfolios(user.uid);
             UI.renderDashboard(portfoliosCache);
         } else {
-            // This runs if the user is logged out.
             handleUserLoggedOut();
         }
     });
@@ -89,6 +81,7 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
+    // Listener for the main page content (dashboard, editor, etc.)
     document.getElementById('main-content').addEventListener('click', async e => {
         const target = e.target;
         const aiButton = target.closest('.ai-assist-btn');
@@ -130,6 +123,7 @@ function setupEventListeners() {
         }
     });
 
+    // Listener for header actions
     document.getElementById('header-actions').addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -146,14 +140,13 @@ function setupEventListeners() {
         }
     });
 
+    // Listener for the Share Modal
     document.getElementById('share-modal-overlay').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
-
         const { id } = button;
         const portfolio = portfoliosCache.find(p => p.id === currentlyEditingId);
         if (!portfolio && id !== 'close-share-btn') return;
-
         switch (id) {
             case 'make-public-btn':
                 await Storage.makePortfolioPublic(currentlyEditingId, portfolio);
@@ -177,6 +170,8 @@ function setupEventListeners() {
         }
     });
     
+    // --- THE FIX ---
+    // A dedicated listener for the AI Modal, because it's outside the main content area.
     document.getElementById('ai-modal-overlay').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
