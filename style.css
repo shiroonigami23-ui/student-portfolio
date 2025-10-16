@@ -15,6 +15,12 @@
     --color-info: #58a6ff;
 }
 
+/* --- UTILITY CLASSES --- */
+.hidden {
+    display: none !important;
+}
+
+
 /* --- THEME DEFINITIONS --- */
 body.theme-space {
     --bg-primary: #0D1117;
@@ -107,7 +113,16 @@ h3 { font-size: 1.25rem; }
 /* --- EDITOR & FORMS --- */
 .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 #portfolio-form { background: var(--bg-secondary); padding: 2.5rem; border-radius: var(--border-radius-md); }
-.form-step { border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+.form-step { 
+    display: none; /* FIX: Hide form steps by default */
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 1.5rem; 
+    margin-bottom: 1.5rem; 
+}
+.form-step.active {
+    display: block; /* FIX: Show only the active step */
+    animation: fadeIn 0.5s ease-in-out;
+}
 .form-step h3 { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; font-size: 1.5rem; }
 .step-indicator {
     flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
@@ -176,7 +191,7 @@ button {
     padding: 0.7rem 1.5rem; font-family: var(--font-primary); font-size: 0.95rem;
     font-weight: 600; border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm); cursor: pointer;
-    transition: all var(--transition-speed); background-color: var(--bg-tertiary);
+    transition: all var(--transition-speed); background-color: var(--bg-secondary);
     color: var(--text-primary);
 }
 button:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--text-secondary); }
@@ -194,4 +209,4 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     #app-container { padding: 1rem; }
     #app-header, .dashboard-header, .editor-header { flex-direction: column; gap: 1rem; align-items: stretch; text-align: center; }
     h2 { font-size: 1.75rem; }
-    }
+}
