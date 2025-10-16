@@ -3,188 +3,127 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student Portfolio Generator</title>
-    <!-- Link to the external stylesheet -->
+    <title>Portfolio Generator v2.0</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;900&display=swap" rel="stylesheet" />
-    <!-- PDF Generation Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body class="theme-day">
-    <!-- Theme switcher buttons -->
-    <div class="theme-switch">
-      <button class="theme-btn theme-day" onclick="setTheme('theme-day')" type="button">Day</button>
-      <button class="theme-btn theme-night" onclick="setTheme('theme-night')" type="button">Night</button>
-      <button class="theme-btn theme-warm" onclick="setTheme('theme-warm')" type="button">Warm</button>
-      <button class="theme-btn theme-forest" onclick="setTheme('theme-forest')" type="button">Forest</button>
-      <button class="theme-btn theme-ocean" onclick="setTheme('theme-ocean')" type="button">Ocean</button>
-      <button class="theme-btn theme-mint" onclick="setTheme('theme-mint')" type="button">Mint</button>
+<body class="theme-space">
+
+    <div class="app-container">
+        <!-- App Header -->
+        <header class="app-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <h1>Portfolio Architect</h1>
+            </div>
+            <div class="theme-switcher">
+                <select id="theme-select">
+                    <option value="theme-space">Space</option>
+                    <option value="theme-day">Day</option>
+                    <option value="theme-night">Night</option>
+                    <option value="theme-warm">Warm</option>
+                    <option value="theme-forest">Forest</option>
+                    <option value="theme-ocean">Ocean</option>
+                    <option value="theme-mint">Mint</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="main-content">
+            <!-- Form Panel -->
+            <div class="form-panel">
+                <form id="profile-form" autocomplete="off" novalidate>
+                    <fieldset>
+                        <legend>Core Identity</legend>
+                        <div class="grid-2">
+                            <div class="input-group"><input type="text" id="first-name" required placeholder=" " /><label for="first-name">First Name</label></div>
+                            <div class="input-group"><input type="text" id="last-name" required placeholder=" " /><label for="last-name">Last Name</label></div>
+                        </div>
+                        <div class="grid-2">
+                             <div class="input-group"><input type="number" id="rollno" required max="999" min="0" placeholder=" " /><label for="rollno">Roll No (Last 3 digits)</label></div>
+                             <div class="input-group"><input type="email" id="email" placeholder=" " /><label for="email">Email Address</label></div>
+                        </div>
+                         <div class="input-group"><textarea id="summary" placeholder=" " rows="3"></textarea><label for="summary">Summary / About</label></div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Skills & Proficiencies</legend>
+                        <div id="skills-area"></div>
+                        <button type="button" class="add-btn" onclick="addSkillInput()">+ Add Skill</button>
+                    </fieldset>
+                    
+                     <fieldset>
+                        <legend>Technical Experience</legend>
+                        <div class="checkbox-section">
+                            <label class="group-label">Programming Languages</label>
+                            <div class="checkbox-grid" id="languagesbox"></div>
+                        </div>
+                         <div class="checkbox-section">
+                            <label class="group-label">Technical Areas</label>
+                            <div class="checkbox-grid" id="techbox"></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Projects</legend>
+                        <div id="projects-area"></div>
+                        <button type="button" class="add-btn" onclick="addProjectInput()">+ Add Project</button>
+                    </fieldset>
+                    
+                    <fieldset>
+                        <legend>Personal Details</legend>
+                        <div class="input-group"><textarea id="hobbies" placeholder=" " rows="2"></textarea><label for="hobbies">Hobbies (comma-separated)</label></div>
+                        <div class="input-group"><input type="text" id="interests" placeholder=" " /><label for="interests">Special Interests (comma-separated)</label></div>
+                        <div class="input-group"><input type="text" id="sports" placeholder=" " /><label for="sports">Sports/Clubs (comma-separated)</label></div>
+                        <div class="input-group"><input type="text" id="achievements" placeholder=" " /><label for="achievements">Achievements (comma-separated)</label></div>
+                        <div class="input-group"><input type="text" id="whatsapp" required placeholder=" " /><label for="whatsapp">WhatsApp No.</label></div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Assets</legend>
+                        <div class="grid-2">
+                            <div class="file-upload">
+                                <label for="profile-pic">Profile Picture</label>
+                                <input type="file" id="profile-pic" accept="image/*">
+                            </div>
+                            <div class="file-upload">
+                                <label for="certificates">Certificates</label>
+                                <input type="file" id="certificates" multiple accept="image/*,application/pdf">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                </form>
+            </div>
+
+            <!-- Live Preview Panel -->
+            <div class="preview-panel-container">
+                <div class="preview-panel" id="profile-preview">
+                    <!-- Header -->
+                    <div class="preview-header">
+                        <img id="display-pic" src="https://via.placeholder.com/150" alt="Profile Picture">
+                        <h2 id="display-name">Your Name</h2>
+                        <p id="display-subheader"></p>
+                        <p class="quote" id="display-quote"></p>
+                    </div>
+
+                    <!-- Sections -->
+                    <div id="preview-sections"></div>
+                    
+                     <!-- Action Buttons -->
+                    <div class="preview-actions">
+                        <button id="download-pdf-btn">Download PDF</button>
+                        <button id="delete-btn" class="delete">Delete Profile</button>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <!-- Form container to input portfolio details -->
-    <div id="form-container" class="active">
-      <h1 class="form-title">Enter Your Details for Portfolio</h1>
-      <form id="profile-form" autocomplete="off" novalidate>
-        
-        <label for="first-name">First Name<span class="required">*</span>:</label>
-        <input type="text" id="first-name" required />
-        <div class="error-message" id="first-name-error">First name is required</div>
-        
-        <label for="last-name">Last Name<span class="required">*</span>:</label>
-        <input type="text" id="last-name" required />
-        <div class="error-message" id="last-name-error">Last name is required</div>
-        
-        <label for="rollno">Roll Number (last 3 digits)<span class="required">*</span>:</label>
-        <input type="number" id="rollno" required max="999" min="0" />
-        <div class="error-message" id="rollno-error">Roll number is required (0-999)</div>
-        
-        <label for="email">Email:</label>
-        <input type="email" id="email" />
-        <div class="error-message" id="email-error">Please enter a valid email</div>
-        
-        <label for="summary">Summary/About (leave blank for default):</label>
-        <textarea id="summary" placeholder="Write about yourself or leave blank for default summary"></textarea>
-        
-        <label for="hobbies">Hobbies:</label>
-        <textarea id="hobbies" placeholder="Chess, reading, coding"></textarea>
-        
-        <label>Programming Languages Known:</label>
-        <div class="checkbox-row" id="languagesbox">
-          <!-- Language checkboxes will be populated by JS or can be hardcoded -->
-        </div>
-        
-        <label>Technical Areas:</label>
-        <div class="checkbox-row" id="techbox">
-            <!-- Tech area checkboxes will be populated by JS or can be hardcoded -->
-        </div>
-        
-        <label>Skills & Proficiency:</label>
-        <div id="skills-area"></div>
-        <button type="button" class="add-skill-btn" onclick="addSkillInput()">+ Add Skill</button>
-        
-        <label class="project-toggle" onclick="toggleProjects()">
-          <i id="proj-arrow">▼</i> Projects <span id="proj-count"></span>
-        </label>
-        <div id="proj-fold" class="proj-list project-hide"></div>
-        <button type="button" class="add-proj-btn" onclick="addProjectInput()">+ Add Project</button>
-        
-        <label for="interests">Special Interests:</label>
-        <input type="text" id="interests" placeholder="e.g., Web Dev, Sports, ML"/>
-        
-        <label for="sports">Sports/Clubs & Highlights:</label>
-        <input type="text" id="sports" placeholder="e.g., Football, State Debater, Robotics Club Head" />
-        
-        <label for="achievements">Achievements:</label>
-        <input type="text" id="achievements" placeholder="Hackathon winner; Internship at TCS" />
-        
-        <label for="whatsapp">WhatsApp No(s) (comma separated)<span class="required">*</span>:</label>
-        <input type="text" id="whatsapp" required pattern="^(\d{10})(,\s*\d{10})*$" placeholder="9876543210, 9123456780" />
-        <div class="error-message" id="whatsapp-error">Please enter valid 10-digit WhatsApp numbers</div>
-        
-        <label for="certificates">Upload Certificates (images/PDFs):</label>
-        <input type="file" id="certificates" multiple accept="image/*,application/pdf"/>
-        <div id="certificate-preview" class="file-preview"></div>
-        
-        <label for="profile-pic">Upload Profile Picture:</label>
-        <input type="file" id="profile-pic" accept="image/*" />
-        <img id="profile-pic-preview" class="file-preview-img" alt="Profile Picture Preview" />
-        
-        <button type="submit">Generate Portfolio</button>
-      </form>
-    </div>
-
-    <!-- Profile display section -->
-    <div id="profile">
-      <div class="header-top">
-        <div class="profile-img-container">
-          <img id="display-pic" class="profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Ccircle cx='120' cy='120' r='120' fill='%23f0f0f0'/%3E%3Ccircle cx='120' cy='90' r='35' fill='%23ccc'/%3E%3Cpath d='M60 180c0-33 27-60 60-60s60 27 60 60v40H60v-40z' fill='%23ccc'/%3E%3C/svg%3E" alt="Profile Picture" />
-        </div>
-        <div class="header-info">
-          <div class="resume-title" id="display-name">Your Name</div>
-          <div class="resume-sub">
-            <span id="display-rollno">Roll No</span>
-            <span>•</span> <span id="display-graduation">CSE 2027</span>
-            <span id="email-separator" style="display:none;">•</span> <span id="display-email"></span>
-          </div>
-          <div class="resume-quote" id="display-quote">Your professional summary will appear here</div>
-        </div>
-      </div>
-      
-      <hr>
-      
-      <div class="section">
-        <div class="section-title"><i>💻</i>Programming Languages</div>
-        <div class="badges" id="display-languages"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title"><i>🧰</i>Technical Areas</div>
-        <div class="badges" id="display-tech"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title"><i>🧑‍💻</i>Core Skills & Proficiency</div>
-        <div id="profile-skills"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title"><i>🛠️</i>Projects <span id="profile-proj-count"></span></div>
-        <div class="project-list-toggle" onclick="toggleProfileProjects()">
-            <i id="profile-proj-arrow">▼</i> Show/Hide All Project Info
-        </div>
-        <div id="profile-projects" class="project-list project-hide"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section" id="about-section" style="display:none;">
-        <div class="section-title"><i>🎯</i>About & Hobbies</div>
-        <div class="profile-row" id="hobby-row">
-          <span class="label">Hobbies:</span><span id="display-hobbies"></span>
-        </div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section" id="interest-section" style="display:none;">
-        <div class="section-title"><i>📚</i>Special Interests</div>
-        <div class="tags" id="display-interests"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title"><i>📞</i>Contact</div>
-        <div class="badges" id="display-whatsapp"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section sports-high" id="sports-section" style="display:none;">
-        <div class="section-title"><i>⚡</i>Sports & Highlights</div>
-        <div class="badges" id="display-sports"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="section" id="achieve-section" style="display:none;">
-        <div class="section-title"><i>🏆</i>Achievements & Certificates</div>
-        <div class="tags" id="display-achievements"></div>
-        <div id="achievement-certificates" class="achievement-certificates"></div>
-        <div class="section-band"></div>
-      </div>
-      
-      <div class="profile-actions">
-        <button class="action-btn action-edit" id="edit-btn">Edit Details</button>
-        <button class="action-btn action-delete" id="delete-btn">Delete Profile</button>
-      </div>
-      
-      <div class="download-section">
-        <button id="download-pdf" class="resume-download">Download PDF</button>
-      </div>
-    </div>
-
-    <!-- Link to the external JavaScript file -->
-    <script src="script.js" defer></script>
+    <script src="script.js"></script>
 </body>
 </html>
+
 
