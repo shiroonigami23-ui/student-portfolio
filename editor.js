@@ -40,9 +40,10 @@ export function populateForm(data) {
         if (el) el.value = data[key];
     });
 
-    // Populate dynamic items
     const populateSection = (key, adder) => {
-        const editorId = `${key.slice(0, -1)}-editor`;
+        const editorId = `${key}-editor`;
+        // Handle edge case for 'experiences' -> 'experience'
+        if (key === 'experience') editorId = 'experience-editor';
         if (data[key] && data[key].length > 0) {
             document.getElementById(editorId).innerHTML = '';
             data[key].forEach(item => adder(item));
@@ -62,7 +63,6 @@ export function collectFormData() {
         data[key] = value;
     }
 
-    // Handle dynamic items
     data.experience = Array.from(document.querySelectorAll('#experience-editor .item-editor')).map(card => ({
         title: card.querySelector('[name="jobTitle"]').value,
         company: card.querySelector('[name="company"]').value,
@@ -80,12 +80,14 @@ export function collectFormData() {
     }));
     data.projects = Array.from(document.querySelectorAll('#projects-editor .item-editor')).map(card => ({
         title: card.querySelector('[name="projectTitle"]').value,
-        description: card.querySelector('[name="projectDescription"]').value
+        description: card.querySelector('[name="projectDescription"]').value,
+        technologies: card.querySelector('[name="projectTech"]').value,
+        liveUrl: card.querySelector('[name="projectLiveUrl"]').value,
+        repoUrl: card.querySelector('[name="projectRepoUrl"]').value
     }));
 
     return data;
 }
-
 
 function navigateSteps(direction) {
     const newStep = currentStep + direction;
@@ -149,11 +151,16 @@ function addSkillItem(skill = { name: '', level: 'Intermediate' }) {
     createDeletableItem(container, html);
 }
 
-function addProjectItem(project = { title: '', description: '' }) {
+function addProjectItem(p = { title: '', description: '', technologies: '', liveUrl: '', repoUrl: '' }) {
      const container = document.getElementById('projects-editor');
      const html = `
-        <input type="text" name="projectTitle" placeholder="Project Title" value="${project.title}">
-        <textarea name="projectDescription" placeholder="Project Description">${project.description}</textarea>
+        <input type="text" name="projectTitle" placeholder="Project Title" value="${p.title}">
+        <textarea name="projectDescription" placeholder="Project Description">${p.description}</textarea>
+        <input type="text" name="projectTech" placeholder="Technologies (comma-separated)" value="${p.technologies}">
+        <div class="inline-inputs">
+            <input type="text" name="projectLiveUrl" placeholder="Live Demo URL" value="${p.liveUrl}">
+            <input type="text" name="projectRepoUrl" placeholder="Source Code URL" value="${p.repoUrl}">
+        </div>
         <button type="button" class="delete-btn item-delete-btn">Delete</button>
      `;
      createDeletableItem(container, html);
