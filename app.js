@@ -1,6 +1,7 @@
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
 import * as Storage from './storage.js';
+import { showConfirmation, showAlert } from './modal.js';
 
 let currentView = 'dashboard';
 let currentlyEditingId = null;
@@ -44,10 +45,14 @@ function setupEventListeners() {
                 await navigateTo('editor');
             }
             if (action === 'delete') {
-                if (confirm('Are you sure you want to delete this portfolio?')) {
-                    Storage.deletePortfolio(id);
-                    UI.renderDashboard(Storage.getPortfolios());
-                }
+                showConfirmation(
+                    'Delete Portfolio',
+                    'Are you sure you want to delete this portfolio? This action cannot be undone.',
+                    () => {
+                        Storage.deletePortfolio(id);
+                        UI.renderDashboard(Storage.getPortfolios());
+                    }
+                );
             }
             if (action === 'preview') await navigateTo('preview', portfolio);
             if (action === 'export') handleExport(portfolio);
@@ -104,15 +109,16 @@ function handleImport() {
                 if (importedData.portfolioTitle && importedData.firstName) {
                     Storage.addPortfolio(importedData);
                     UI.renderDashboard(Storage.getPortfolios());
+                    showAlert('Success', 'Portfolio imported successfully!');
                 } else {
-                    alert('Invalid portfolio file.');
+                    showAlert('Import Error', 'The selected file is not a valid portfolio.');
                 }
             } catch (error) {
-                alert('Could not parse the file. Please make sure it is a valid portfolio JSON.');
+                showAlert('Import Error', 'Could not parse the file. Please make sure it is a valid portfolio JSON.');
                 console.error("Import error:", error);
             }
         };
-        reader.readAsText(file);
+        reader.readText(file);
     };
     input.click();
 }
