@@ -1,4 +1,3 @@
-// --- IMPORTS ---
 import { auth } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import * as UI from './ui.js';
@@ -7,19 +6,29 @@ import * as Storage from './storage.js';
 import { showAlert, showConfirmation } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
-// FIXED: Changed 'improveWithAI' to 'improveWriting' to match the function exported from ai.js
 import { improveWriting, generateBulletPoints } from './ai.js';
 
-
-// --- STATE ---
 let currentUser = null;
 let currentlyEditingId = null;
 let portfoliosCache = [];
 
+async function init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('shareId');
 
-// --- INITIALIZATION ---
-function init() {
-    Editor.init(); // CRITICAL: Initialize the editor module first
+    if (shareId) {
+        const publicPortfolio = await Storage.getPublicPortfolio(shareId);
+        if (publicPortfolio) {
+            UI.renderPortfolioPreview(publicPortfolio);
+            UI.showView('preview-view');
+            UI.updateHeader('public-preview', null);
+        } else {
+            showAlert("Not Found", "The portfolio you are looking for does not exist or is no longer shared.");
+        }
+        return;
+    }
+
+    Editor.init();
     Editor.setupLiveValidation();
 
     onAuthStateChanged(auth, (user) => {
@@ -33,8 +42,6 @@ function init() {
     setupEventListeners();
 }
 
-
-// --- AUTHENTICATION HANDLERS ---
 async function handleUserLoggedIn(user) {
     UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
     navigateTo('dashboard');
@@ -43,7 +50,6 @@ async function handleUserLoggedIn(user) {
 function handleUserLoggedOut() {
     portfoliosCache = [];
     currentlyEditingId = null;
-    // Pass null for user to correctly update header for logged-out state
     UI.updateHeader('login', null);
     UI.showView('login-view');
 }
@@ -52,7 +58,6 @@ async function handleGoogleSignIn() {
     const provider = new GoogleAuthProvider();
     try {
         await signInWithPopup(auth, provider);
-        // onAuthStateChanged will handle the rest
     } catch (error) {
         console.error("Google Sign-In Error:", error);
         showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
@@ -67,10 +72,7 @@ async function handleLogout() {
     }
 }
 
-
-// --- EVENT LISTENERS ---
 function setupEventListeners() {
-
     document.getElementById('main-content').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -90,9 +92,10 @@ function setupEventListeners() {
                 case 'delete': return showConfirmation("Delete Portfolio?", "This action is permanent.", () => handleDelete(dataId));
                 case 'preview':
                     const portfolio = portfoliosCache.find(p => p.id === dataId);
-                    if(portfolio) navigateTo('preview', portfolio);
+                    if (portfolio) navigateTo('preview', portfolio);
                     break;
                 case 'export': return handleExport(dataId);
+                case 'share': return handleShare(dataId);
             }
         }
     });
@@ -105,7 +108,6 @@ function setupEventListeners() {
         if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
     });
 
-    // Use 'change' event for select dropdown
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
@@ -114,7 +116,6 @@ function setupEventListeners() {
         }
     });
 
-    // AI Modal Actions
     let activeTextarea = null;
     document.getElementById('editor-view').addEventListener('click', (e) => {
         const button = e.target.closest('button');
@@ -137,7 +138,6 @@ function setupEventListeners() {
         if (action === 'improve' || action === 'bullets') {
             UI.setAiModalState('loading');
             try {
-                // FIXED: Changed 'improveWithAI' to 'improveWriting'
                 const newText = action === 'improve'
                     ? await improveWriting(originalText)
                     : await generateBulletPoints(originalText);
@@ -153,15 +153,12 @@ function setupEventListeners() {
             }
             UI.hideAiModal();
         } else if (action === 'close') {
-            // This handles both cancel and back buttons
-            UI.setAiModalState('options'); // Go back to options view
-            UI.hideAiModal(); // Hide the whole modal
+            UI.setAiModalState('options');
+            UI.hideAiModal();
         }
     });
 }
 
-
-// --- DATA & NAVIGATION ---
 async function navigateToEditor(id = null) {
     currentlyEditingId = id;
     if (id) {
@@ -178,8 +175,6 @@ async function handleSavePortfolio() {
     const validationErrors = validatePortfolio(data);
 
     if (validationErrors.length > 0) {
-        const errorList = validationErrors.map(err => `<li>${err.message}</li>`).join('');
-        // The message in showAlert can interpret HTML
         showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
         return;
     }
@@ -213,7 +208,6 @@ async function handleDelete(id) {
 async function handleExport(id) {
     const portfolio = portfoliosCache.find(p => p.id === id);
     if (!portfolio) return;
-    // Exclude Firestore-specific fields from export
     const { createdAt, lastModified, ...exportData } = portfolio;
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -238,12 +232,11 @@ function handleImport() {
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
-                // Basic validation for imported file
                 if (!data.portfolioTitle || !data.firstName) {
                     throw new Error("File does not appear to be a valid portfolio.");
                 }
                 await Storage.addPortfolio(currentUser.uid, data);
-                navigateTo('dashboard'); // This will refetch and render
+                navigateTo('dashboard');
                 showToast("Portfolio imported!", 'success');
             } catch (error) {
                 console.error("Import error", error);
@@ -255,6 +248,14 @@ function handleImport() {
     input.click();
 }
 
+async function handleShare(id) {
+    try {
+        const shareUrl = await Storage.makePortfolioPublic(currentUser.uid, id);
+        showAlert("Share Link", `Here is your shareable link:\n\n${shareUrl}`);
+    } catch (error) {
+        showAlert("Sharing Error", "Could not make the portfolio public. Please try again later.");
+    }
+}
 
 async function navigateTo(view, data = null) {
     UI.updateHeader(view, currentUser);
@@ -273,14 +274,12 @@ async function navigateTo(view, data = null) {
                 await UI.renderPortfolioPreview(data);
                 UI.showView('preview-view');
             } else {
-                // If no data, go back to dashboard
                 navigateTo('dashboard');
             }
             break;
         default:
-             UI.showView('login-view');
+            UI.showView('login-view');
     }
 }
 
-// --- Start the App ---
 document.addEventListener('DOMContentLoaded', init);
