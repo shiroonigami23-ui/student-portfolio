@@ -1,46 +1,37 @@
-// Correctly import other JS files from the same (root) directory
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
-//import * as Portfolio from './portfolio.js';
 import * as Storage from './storage.js';
 
-// --- State ---
 let currentView = 'dashboard';
 let currentlyEditingId = null;
 
-// --- Initialization ---
 function init() {
     UI.populateThemes(Storage.getTheme());
-    UI.applyTheme(Storage.getTheme()); // Make sure theme is applied on load
+    UI.applyTheme(Storage.getTheme());
     setupEventListeners();
-    const portfolios = Storage.getPortfolios();
-    UI.renderDashboard(portfolios);
-    // CORRECTED LINE: Use the full element ID 'dashboard-view'
+    UI.renderDashboard(Storage.getPortfolios());
     UI.showView('dashboard-view');
 }
 
-// --- Event Listeners ---
 function setupEventListeners() {
-    // Global Header Actions
-    document.getElementById('header-actions').addEventListener('click', e => {
+    document.getElementById('header-actions').addEventListener('click', async (e) => {
         if (e.target.id === 'back-to-dashboard-btn') {
-            navigateTo('dashboard');
+            await navigateTo('dashboard');
         }
         if (e.target.id === 'preview-portfolio-btn') {
             const data = Editor.collectFormData();
-            navigateTo('preview', data);
+            await navigateTo('preview', data);
         }
         if (e.target.id === 'download-pdf-btn') {
             UI.downloadAsPDF();
         }
     });
 
-    // Dashboard
-    document.getElementById('dashboard-view').addEventListener('click', e => {
+    document.getElementById('dashboard-view').addEventListener('click', async (e) => {
         if (e.target.id === 'create-new-btn') {
             currentlyEditingId = null;
             Editor.resetForm();
-            navigateTo('editor');
+            await navigateTo('editor');
         }
         const target = e.target.closest('button');
         if (!target) return;
@@ -52,7 +43,7 @@ function setupEventListeners() {
             currentlyEditingId = id;
             const portfolio = Storage.getPortfolioById(currentlyEditingId);
             Editor.populateForm(portfolio);
-            navigateTo('editor');
+            await navigateTo('editor');
         }
         if (action === 'delete') {
             if (confirm('Are you sure you want to delete this portfolio?')) {
@@ -62,12 +53,11 @@ function setupEventListeners() {
         }
         if (action === 'preview') {
             const portfolio = Storage.getPortfolioById(id);
-            navigateTo('preview', portfolio);
+            await navigateTo('preview', portfolio);
         }
     });
 
-    // Editor
-    document.getElementById('editor-view').addEventListener('click', e => {
+    document.getElementById('editor-view').addEventListener('click', async (e) => {
         if (e.target.id === 'save-portfolio-btn') {
             const data = Editor.collectFormData();
             if (currentlyEditingId) {
@@ -76,14 +66,13 @@ function setupEventListeners() {
             } else {
                 Storage.addPortfolio(data);
             }
-            navigateTo('dashboard');
+            await navigateTo('dashboard');
         }
         if (e.target.id === 'cancel-edit-btn') {
-            navigateTo('dashboard');
+            await navigateTo('dashboard');
         }
     });
 
-    // Theme Selector in header
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
             const newTheme = e.target.value;
@@ -93,8 +82,7 @@ function setupEventListeners() {
     });
 }
 
-// --- Navigation ---
-function navigateTo(view, data = null) {
+async function navigateTo(view, data = null) {
     currentView = view;
     UI.updateHeader(view, data);
 
@@ -108,11 +96,10 @@ function navigateTo(view, data = null) {
             UI.showView('editor-view');
             break;
         case 'preview':
-            UI.renderPortfolioPreview(data);
+            await UI.renderPortfolioPreview(data); // Await the async rendering
             UI.showView('preview-view');
             break;
     }
 }
 
-// --- Start the App ---
 document.addEventListener('DOMContentLoaded', init);
