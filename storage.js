@@ -1,5 +1,5 @@
 import { db } from './firebase.js';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
 function getUserPortfoliosRef(userId) {
@@ -68,33 +68,35 @@ export async function deletePortfolio(userId, id) {
     }
 }
 
-export async function makePortfolioPublic(userId, portfolioId) {
-    const userPortfolioRef = doc(db, 'users', userId, 'portfolios', portfolioId);
-    const publicPortfolioRef = doc(db, 'publicPortfolios', portfolioId);
+export async function togglePortfolioPublicStatus(userId, id) {
+    const portfolio = await getPortfolioById(userId, id);
+    if (!portfolio) throw new Error("Portfolio not found.");
 
-    try {
-        const portfolioDoc = await getDoc(userPortfolioRef);
-        if (portfolioDoc.exists()) {
-            const portfolioData = portfolioDoc.data();
-            await setDoc(publicPortfolioRef, portfolioData);
-            await updateDoc(userPortfolioRef, { isPublic: true });
-            return `${window.location.origin}${window.location.pathname}?shareId=${portfolioId}`;
-        } else {
-            throw new Error("Portfolio not found.");
-        }
-    } catch (error) {
-        console.error("Error making portfolio public:", error);
-        throw error;
+    const newStatus = !portfolio.isPublic;
+    const userPortfolioRef = doc(db, 'users', userId, 'portfolios', id);
+    await updateDoc(userPortfolioRef, { isPublic: newStatus });
+
+    const publicPortfolioRef = doc(db, 'publicPortfolios', id);
+
+    if (newStatus) {
+        // Make public: copy data to public collection
+        await setDoc(publicPortfolioRef, portfolio);
+    } else {
+        // Make private: delete from public collection
+        await deleteDoc(publicPortfolioRef);
     }
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${id}`;
+    return { isPublic: newStatus, shareUrl };
 }
 
-export async function getPublicPortfolio(portfolioId) {
+export async function getPublicPortfolio(id) {
     try {
-        const docRef = doc(db, 'publicPortfolios', portfolioId);
+        const docRef = doc(db, 'publicPortfolios', id);
         const docSnap = await getDoc(docRef);
-        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+        return docSnap.exists() ? docSnap.data() : null;
     } catch (error) {
         console.error("Error fetching public portfolio:", error);
-        throw error;
+        return null;
     }
 }
