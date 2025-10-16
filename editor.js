@@ -11,17 +11,13 @@ export function init() {
     profilePicPreview = document.getElementById('profile-pic-preview');
     removePicBtn = document.getElementById('remove-pic-btn');
 
-    // --- THIS IS THE FIX ---
-    // STEP 2: Find the dropdown menu in the editor form
-    const themeSelect = document.getElementById('theme-select');
+    const editorThemeSelect = document.getElementById('editor-theme-select');
 
-    // STEP 3: Populate it with the themes from your config file
-    if (themeSelect) {
-        themeSelect.innerHTML = Object.entries(THEMES)
-            .map(([key, value]) => `<option value="${key}">${value}</option>`)
-            .join('');
-    }
-    // --- END OF FIX ---
+if (editorThemeSelect) {
+    editorThemeSelect.innerHTML = Object.entries(THEMES)
+        .map(([key, value]) => `<option value="${key}">${value}</option>`)
+        .join('');
+}
 
     // Attach event listeners that are internal to the editor
     document.getElementById('next-step-btn').addEventListener('click', () => navigateSteps(1));
