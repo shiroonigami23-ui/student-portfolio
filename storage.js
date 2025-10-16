@@ -1,4 +1,4 @@
-import { createPortfolio, updatePortfolio as updatePortfolioObject } from '/portfolio.js';
+import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
 const PORTFOLIO_KEY = 'portfolioApp.portfolios';
 const THEME_KEY = 'portfolioApp.theme';
