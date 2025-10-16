@@ -1,6 +1,7 @@
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
 import * as Storage from './storage.js';
+import * as AI from './ai.js';
 import { showConfirmation, showAlert } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolioData } from './validator.js';
@@ -62,6 +63,14 @@ function setupEventListeners() {
             if (action === 'export') handleExport(portfolio);
         }
     });
+    
+    document.getElementById('portfolio-form').addEventListener('click', (e) => {
+        if (e.target.classList.contains('ai-assist-btn')) {
+            const wrapper = e.target.closest('.textarea-wrapper');
+            const textarea = wrapper.querySelector('textarea');
+            handleAiAssist(textarea);
+        }
+    });
 
     document.getElementById('editor-view').addEventListener('click', async (e) => {
         if (e.target.id === 'save-portfolio-btn') {
@@ -94,6 +103,67 @@ function setupEventListeners() {
         }
     });
 }
+
+// --- AI Modal Handling ---
+let activeTextarea = null;
+let lastAiAction = null;
+const aiModal = {
+    overlay: document.getElementById('ai-modal-overlay'),
+    initial: document.getElementById('ai-modal-initial'),
+    loading: document.getElementById('ai-modal-loading'),
+    result: document.getElementById('ai-modal-result'),
+    resultTextarea: document.getElementById('ai-result-textarea'),
+    improveBtn: document.getElementById('ai-improve-btn'),
+    bulletsBtn: document.getElementById('ai-bullets-btn'),
+    useTextBtn: document.getElementById('ai-use-text-btn'),
+    retryBtn: document.getElementById('ai-retry-btn'),
+    backBtn: document.getElementById('ai-back-btn'),
+    cancelBtn: document.getElementById('ai-cancel-btn'),
+};
+
+function handleAiAssist(textarea) {
+    activeTextarea = textarea;
+    aiModal.overlay.classList.remove('hidden');
+    showAiState('initial');
+}
+
+function showAiState(state) {
+    ['initial', 'loading', 'result'].forEach(s => aiModal[s].classList.add('hidden'));
+    aiModal[state].classList.remove('hidden');
+}
+
+async function performAiAction(action) {
+    lastAiAction = action;
+    const originalText = activeTextarea.value;
+    if (!originalText.trim()) {
+        showAlert('Input Needed', 'Please write some text before using AI assist.');
+        return;
+    }
+    
+    showAiState('loading');
+    let newText = '';
+    if (action === 'improve') {
+        newText = await AI.improveWriting(originalText);
+    } else if (action === 'bullets') {
+        newText = await AI.generateBulletPoints(originalText);
+    }
+    aiModal.resultTextarea.value = newText;
+    showAiState('result');
+}
+
+aiModal.improveBtn.addEventListener('click', () => performAiAction('improve'));
+aiModal.bulletsBtn.addEventListener('click', () => performAiAction('bullets'));
+aiModal.retryBtn.addEventListener('click', () => performAiAction(lastAiAction));
+aiModal.backBtn.addEventListener('click', () => showAiState('initial'));
+aiModal.cancelBtn.addEventListener('click', () => aiModal.overlay.classList.add('hidden'));
+aiModal.useTextBtn.addEventListener('click', () => {
+    activeTextarea.value = aiModal.resultTextarea.value;
+    aiModal.overlay.classList.add('hidden');
+    // Trigger input event for live validation
+    activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+});
+// --- End AI Modal Handling ---
+
 
 function handleExport(portfolio) {
     const dataStr = JSON.stringify(portfolio, null, 2);
@@ -130,7 +200,7 @@ function handleImport() {
                 console.error("Import error:", error);
             }
         };
-        reader.readAsText(file);
+        reader.readText(file);
     };
     input.click();
 }
