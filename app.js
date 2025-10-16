@@ -24,14 +24,27 @@ async function init() {
     Editor.init();
     Editor.setupLiveValidation();
 
-    onAuthStateChanged(auth, (user) => {
+    // --- MAJOR FIX ---
+    // The authentication logic is now more direct to prevent race conditions.
+    onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            handleUserLoggedIn(user);
+            // This logic now runs directly when the user is confirmed.
+            // 1. Immediately switch to the dashboard view.
+            UI.showView('dashboard-view');
+            // 2. Update the header for an authenticated user.
+            UI.updateHeader('dashboard', user);
+            // 3. Apply the correct theme.
+            UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
+            // 4. THEN, fetch the portfolio data.
+            portfoliosCache = await Storage.getPortfolios(user.uid);
+            UI.renderDashboard(portfoliosCache);
         } else {
+            // This runs if the user is logged out.
             handleUserLoggedOut();
         }
     });
+    
     setupEventListeners();
 }
 
@@ -55,10 +68,6 @@ async function handlePublicView(portfolioId) {
     }
 }
 
-async function handleUserLoggedIn(user) {
-    navigateTo('dashboard');
-}
-
 function handleUserLoggedOut() {
     portfoliosCache = [];
     currentlyEditingId = null;
@@ -80,22 +89,16 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
-    // FIX: Combined event listener for main content area using event delegation
     document.getElementById('main-content').addEventListener('click', async e => {
         const target = e.target;
-
-        // AI Assist Button logic
         const aiButton = target.closest('.ai-assist-btn');
         if (aiButton) {
             const wrapper = aiButton.closest('.textarea-wrapper');
             const textarea = wrapper ? wrapper.querySelector('textarea') : null;
-            if (textarea) {
-                UI.showAiModal(textarea);
-            }
-            return; // Stop further processing for this specific click
+            if (textarea) UI.showAiModal(textarea);
+            return;
         }
 
-        // General button logic
         const button = target.closest('button');
         if (!button) return;
 
