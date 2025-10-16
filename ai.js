@@ -4,7 +4,7 @@
 // 2. Click "Get API key" and create a new key.
 // 3. Copy the key and paste it below.
 
-const API_KEY = 'AIzaSyBSIOzrKMkXlYBFxzGWOFYdbb9mF1TsOEo'; // <--- PASTE YOUR KEY HERE
+const API_KEY = 'AIzaSyBdsaHzE7dMvYKmurEfiqMtnk0Fb-12dwk'; // <--- PASTE YOUR KEY HERE
 
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
