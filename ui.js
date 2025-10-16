@@ -15,8 +15,13 @@ export const showdownConverter = new showdown.Converter({
 
 // --- View Management ---
 export function showView(viewId) {
+    // This is a more robust way to switch views, ensuring only one is active.
     mainContent.querySelectorAll('.view').forEach(view => {
-        view.classList.toggle('active', view.id === viewId);
+        if (view.id === viewId) {
+            view.classList.add('active');
+        } else {
+            view.classList.remove('active');
+        }
     });
 }
 
@@ -24,7 +29,6 @@ export function updateHeader(view, user) {
     headerActions.innerHTML = ''; // Clear previous state
 
     if (user) {
-        // Build the HTML for the header elements
         const themeSelectHTML = `
             <select id="theme-select" title="Change Theme">
                 ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
@@ -38,7 +42,6 @@ export function updateHeader(view, user) {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         }
 
-        // Set the final HTML
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
@@ -47,8 +50,6 @@ export function updateHeader(view, user) {
                 <button id="logout-btn">Logout</button>
             </div>`;
         
-        // Safely find the theme selector that was just created and set its value
-        // based on the user's preference in localStorage.
         const themeSelectElement = document.getElementById('theme-select');
         if (themeSelectElement) {
             themeSelectElement.value = localStorage.getItem('theme') || 'theme-space';
