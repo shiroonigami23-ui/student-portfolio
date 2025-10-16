@@ -11,8 +11,8 @@
     --color-info: #58a6ff;
 }
 
-/* --- THEME DEFINITIONS --- */
-body.theme-space {
+/* --- THEME DEFINITIONS (Now reusable on any element) --- */
+.theme-space {
     --bg-primary: #0D1117;
     --bg-secondary: #161B22;
     --bg-glass: rgba(22, 27, 34, 0.7);
@@ -24,7 +24,7 @@ body.theme-space {
     --glow-color: rgba(88, 166, 255, 0.2);
 }
 
-body.theme-day {
+.theme-day {
     --bg-primary: #f5f5f5;
     --bg-secondary: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.7);
@@ -36,7 +36,7 @@ body.theme-day {
     --glow-color: rgba(25, 118, 210, 0.2);
 }
 
-body.theme-night {
+.theme-night {
     --bg-primary: #121212;
     --bg-secondary: #1E1E1E;
     --bg-glass: rgba(30, 30, 30, 0.7);
@@ -48,7 +48,7 @@ body.theme-night {
     --glow-color: rgba(187, 134, 252, 0.2);
 }
 
-body.theme-warm {
+.theme-warm {
     --bg-primary: #2c1e19;
     --bg-secondary: #4b3b33;
     --bg-glass: rgba(75, 59, 51, 0.7);
@@ -60,7 +60,7 @@ body.theme-warm {
     --glow-color: rgba(255, 140, 97, 0.2);
 }
 
-body.theme-forest {
+.theme-forest {
     --bg-primary: #121410;
     --bg-secondary: #1A2118;
     --bg-glass: rgba(26, 33, 24, 0.7);
@@ -72,7 +72,7 @@ body.theme-forest {
     --glow-color: rgba(106, 153, 78, 0.2);
 }
 
-body.theme-ocean {
+.theme-ocean {
     --bg-primary: #0f1c2e;
     --bg-secondary: #1a2a42;
     --bg-glass: rgba(26, 42, 66, 0.7);
@@ -84,7 +84,7 @@ body.theme-ocean {
     --glow-color: rgba(56, 189, 248, 0.2);
 }
 
-body.theme-mint {
+.theme-mint {
     --bg-primary: #e6f8f5;
     --bg-secondary: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.7);
@@ -96,7 +96,7 @@ body.theme-mint {
     --glow-color: rgba(0, 168, 150, 0.2);
 }
 
-body.theme-sunset {
+.theme-sunset {
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
     --bg-glass: rgba(22, 33, 62, 0.7);
@@ -154,7 +154,7 @@ h2 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-primary); }
 .ai-assist-btn:hover { color: var(--accent-primary); }
 
 /* --- PREVIEW VIEW & TEMPLATES --- */
-#portfolio-preview-content { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 2rem; min-height: 50vh; }
+#portfolio-preview-content { border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 2rem; min-height: 50vh; background-color: var(--bg-secondary); color: var(--text-primary); }
 .portfolio-template .dates { font-style: italic; color: var(--text-secondary); font-size: 0.9em; }
 .portfolio-template .tech { font-size: 0.9em; color: var(--text-secondary); }
 .portfolio-template .project-links { margin-top: 0.75rem; display: flex; gap: 1rem; }
@@ -209,8 +209,10 @@ h2 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-primary); }
 .modal-content { background: var(--bg-secondary); padding: 2rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); text-align: center; max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s ease; }
 .modal-overlay:not(.hidden) .modal-content { transform: scale(1); }
 #modal-title { margin-bottom: 1rem; font-size: 1.4rem; }
-#modal-message { font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; }
+#modal-message { font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; text-align: left; }
 .modal-actions { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;}
+.share-link-wrapper { display: flex; gap: 0.5rem; margin-top: 1rem; }
+#share-link-input { margin-bottom: 0; }
 
 /* AI Modal Styles */
 .ai-modal { max-width: 600px; }
@@ -240,6 +242,8 @@ button:hover, .primary-btn:hover { transform: translateY(-2px); box-shadow: var(
 .delete-btn:hover { filter: brightness(1.1); }
 button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .add-item-btn { display: inline-block; margin-top: 1rem; border-style: dashed; }
+button[data-action="share"].is-public { border-color: var(--color-success); color: var(--color-success); }
+
 
 /* --- RESPONSIVE DESIGN --- */
 @media (max-width: 768px) {
