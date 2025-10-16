@@ -16,7 +16,7 @@
 
         <header id="app-header">
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <h1>Portfolio Architect</h1>
             </div>
             <div id="header-actions"></div>
@@ -41,7 +41,7 @@
                          <button id="cancel-edit-btn">Cancel</button>
                     </div>
                 </div>
-                <form id="portfolio-form">
+                <form id="portfolio-form" novalidate>
                     <div class="form-step active" data-step="1">
                         <h3><span class="step-indicator">1</span> Basic Information</h3>
                         <input type="text" name="portfolioTitle" placeholder="Portfolio Title (e.g., 'Web Dev Portfolio')" required>
@@ -116,14 +116,14 @@
         <div class="modal-content">
             <h3 id="modal-title">Confirmation</h3>
             <p id="modal-message">Are you sure?</p>
-            <div id="modal-actions" class="modal-actions">
-                <!-- Buttons are dynamically added here -->
-            </div>
+            <div id="modal-actions" class="modal-actions"></div>
         </div>
     </div>
+    
+    <!-- =========== Notifications =========== -->
+    <div id="notification-container"></div>
 
     <script type="module" src="app.js"></script>
-    <script type="module" src="modal.js"></script>
 </body>
 </html>
 
