@@ -1,43 +1,19 @@
 import { showdownConverter } from '../ui.js';
 
-// Helper function to prevent text injection issues (XSS)
-const escapeHtml = (unsafe) => {
-    if (!unsafe) return '';
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
-};
-
-// A more robust way to render a section
-const renderSection = (title, items, itemRenderer, before = '', after = '') => {
-    // Filter out items that are essentially empty
-    const validItems = items ? items.filter(item => Object.values(item).some(val => val && val.trim() !== '')) : [];
-    if (validItems.length === 0) return '';
-    
-    return `
-        <section class="preview-${title.toLowerCase().replace(/\s/g, '')}">
-            <h3>${escapeHtml(title)}</h3>
-            ${before}
-            ${validItems.map(itemRenderer).join('')}
-            ${after}
-        </section>
-    `;
-};
-
 export function render(data) {
-    const summaryHtml = data.summary ? showdownConverter.makeHtml(escapeHtml(data.summary)) : '';
-    const fullName = `${escapeHtml(data.firstName || '')} ${escapeHtml(data.lastName || '')}`;
+    const summaryHtml = data.summary ? showdownConverter.makeHtml(data.summary) : '';
+
+    const profilePicHtml = data.profilePic 
+        ? `<img src="${data.profilePic}" alt="Profile Picture" class="profile-pic">` 
+        : '';
 
     return `
     <div class="portfolio-template modern">
         <header class="preview-header">
-            ${data.profilePic ? `<img src="${escapeHtml(data.profilePic)}" alt="Profile Picture" class="profile-pic">` : ''}
-            <h1>${fullName}</h1>
-            <h2>${escapeHtml(data.portfolioTitle || 'Portfolio')}</h2>
-            <p>${escapeHtml(data.email || '')}</p>
+            ${profilePicHtml}
+            <h1>${data.firstName || ''} ${data.lastName || ''}</h1>
+            <h2>${data.portfolioTitle || 'Portfolio'}</h2>
+            <p>${data.email || ''}</p>
         </header>
 
         ${summaryHtml ? `
@@ -46,34 +22,52 @@ export function render(data) {
             <div class="markdown-content">${summaryHtml}</div>
         </section>` : ''}
 
-        ${renderSection('Work Experience', data.experience, exp => `
-            <div class="item">
-                <h4>${escapeHtml(exp.title)} <span>at ${escapeHtml(exp.company)}</span></h4>
-                <p class="dates">${escapeHtml(exp.dates)}</p>
-                <div class="markdown-content">${showdownConverter.makeHtml(escapeHtml(exp.description || ''))}</div>
-            </div>
-        `)}
-        
-        ${renderSection('Education', data.education, edu => `
-             <div class="item">
-                <h4>${escapeHtml(edu.degree)}</h4>
-                <p>${escapeHtml(edu.institution)} - ${escapeHtml(edu.year)}</p>
-            </div>
-        `)}
-
-        ${renderSection('Skills', data.skills, skill => `<li>${escapeHtml(skill.name)} (${escapeHtml(skill.level)})</li>`, '<ul>', '</ul>')}
-
-        ${renderSection('Projects', data.projects, p => `
-            <div class="item">
-                <h4>${escapeHtml(p.title)}</h4>
-                <div class="markdown-content">${showdownConverter.makeHtml(escapeHtml(p.description || ''))}</div>
-                ${p.technologies ? `<p class="tech"><strong>Technologies:</strong> ${escapeHtml(p.technologies)}</p>` : ''}
-                <div class="project-links">
-                    ${p.liveUrl ? `<a href="${escapeHtml(p.liveUrl)}" target="_blank" rel="noopener noreferrer">Live Demo</a>` : ''}
-                    ${p.repoUrl ? `<a href="${escapeHtml(p.repoUrl)}" target="_blank" rel="noopener noreferrer">Source Code</a>` : ''}
+        ${(data.experience && data.experience.length > 0 && data.experience[0].title) ? `
+        <section class="preview-experience">
+            <h3>Work Experience</h3>
+            ${data.experience.map(exp => `
+                <div class="item">
+                    <h4>${exp.title} <span>at ${exp.company}</span></h4>
+                    <p class="dates">${exp.dates}</p>
+                    <div class="markdown-content">${showdownConverter.makeHtml(exp.description || '')}</div>
                 </div>
-            </div>
-        `)}
+            `).join('')}
+        </section>` : ''}
+        
+        ${(data.education && data.education.length > 0 && data.education[0].degree) ? `
+        <section class="preview-education">
+            <h3>Education</h3>
+            ${data.education.map(edu => `
+                 <div class="item">
+                    <h4>${edu.degree}</h4>
+                    <p>${edu.institution} - ${edu.year}</p>
+                </div>
+            `).join('')}
+        </section>` : ''}
+
+        ${(data.skills && data.skills.length > 0 && data.skills[0].name) ? `
+        <section class="preview-skills">
+            <h3>Skills</h3>
+            <ul>
+                ${data.skills.map(skill => `<li>${skill.name} (${skill.level})</li>`).join('')}
+            </ul>
+        </section>` : ''}
+
+        ${(data.projects && data.projects.length > 0 && data.projects[0].title) ? `
+        <section class="preview-projects">
+            <h3>Projects</h3>
+            ${data.projects.map(p => `
+                <div class="item">
+                    <h4>${p.title}</h4>
+                    <div class="markdown-content">${showdownConverter.makeHtml(p.description || '')}</div>
+                    ${p.technologies ? `<p class="tech"><strong>Technologies:</strong> ${p.technologies}</p>` : ''}
+                    <div class="project-links">
+                        ${p.liveUrl ? `<a href="${p.liveUrl}" target="_blank">Live Demo</a>` : ''}
+                        ${p.repoUrl ? `<a href="${p.repoUrl}" target="_blank">Source Code</a>` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </section>` : ''}
     </div>
     `;
 }
