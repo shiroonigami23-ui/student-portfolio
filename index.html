@@ -26,8 +26,11 @@
 
             <div id="dashboard-view" class="view">
                 <h2>Your Portfolios</h2>
+                <div class="dashboard-actions">
+                    <button id="create-new-btn" class="primary-btn">+ Create New Portfolio</button>
+                    <button id="import-portfolio-btn">Import Portfolio</button>
+                </div>
                 <div id="portfolio-list"></div>
-                <button id="create-new-btn" class="primary-btn">+ Create New Portfolio</button>
             </div>
 
             <div id="editor-view" class="view">
@@ -46,6 +49,14 @@
                         <input type="text" name="lastName" placeholder="Last Name" required>
                         <input type="email" name="email" placeholder="Email Address">
                         <textarea name="summary" placeholder="Summary / Professional Bio (Markdown supported)"></textarea>
+                        <div class="file-input-wrapper">
+                            <label>Profile Picture</label>
+                             <div id="profile-pic-preview-container">
+                                <img id="profile-pic-preview" src="#" alt="Profile picture preview" class="hidden">
+                                <button type="button" id="remove-pic-btn" class="delete-btn hidden">Remove</button>
+                            </div>
+                            <input type="file" id="profile-pic-input" name="profilePicInput" accept="image/*">
+                        </div>
                     </div>
                     
                     <div class="form-step" data-step="2">
