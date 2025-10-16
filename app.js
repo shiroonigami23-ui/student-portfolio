@@ -21,18 +21,26 @@ async function init() {
         return;
     }
 
+    // --- MAJOR FIX ---
+    // Set a definite starting state. Show the login view by default
+    // before waiting for the asynchronous authentication check.
+    UI.showView('login-view');
+
     Editor.init();
     Editor.setupLiveValidation();
 
     onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
+            // Now that Firebase has confirmed a user is logged in,
+            // switch definitively to the dashboard.
             UI.showView('dashboard-view');
             UI.updateHeader('dashboard', user);
             UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
             portfoliosCache = await Storage.getPortfolios(user.uid);
             UI.renderDashboard(portfoliosCache);
         } else {
+            // If there's no user, ensure the login view is shown.
             handleUserLoggedOut();
         }
     });
@@ -81,7 +89,6 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
-    // Listener for the main page content (dashboard, editor, etc.)
     document.getElementById('main-content').addEventListener('click', async e => {
         const target = e.target;
         const aiButton = target.closest('.ai-assist-btn');
@@ -123,7 +130,6 @@ function setupEventListeners() {
         }
     });
 
-    // Listener for header actions
     document.getElementById('header-actions').addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -140,7 +146,6 @@ function setupEventListeners() {
         }
     });
 
-    // Listener for the Share Modal
     document.getElementById('share-modal-overlay').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -170,8 +175,6 @@ function setupEventListeners() {
         }
     });
     
-    // --- THE FIX ---
-    // A dedicated listener for the AI Modal, because it's outside the main content area.
     document.getElementById('ai-modal-overlay').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
