@@ -15,14 +15,20 @@ export const showdownConverter = new showdown.Converter({
 
 // --- View Management ---
 export function showView(viewId) {
-    // This is a more robust way to switch views, ensuring only one is active.
+    // --- MAJOR FIX ---
+    // This function is now more "brute force" to prevent race conditions.
+    // First, it explicitly hides ALL views.
     mainContent.querySelectorAll('.view').forEach(view => {
-        if (view.id === viewId) {
-            view.classList.add('active');
-        } else {
-            view.classList.remove('active');
-        }
+        view.classList.remove('active');
     });
+
+    // Then, it explicitly shows ONLY the target view.
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+    } else {
+        console.error(`showView Error: A view with the ID "${viewId}" could not be found.`);
+    }
 }
 
 export function updateHeader(view, user) {
@@ -85,6 +91,7 @@ export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
     try {
+        // Corrected path for templates
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
