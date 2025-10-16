@@ -16,7 +16,7 @@
 
         <header id="app-header">
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <h1>Portfolio Architect</h1>
             </div>
             <div id="header-actions"></div>
@@ -48,7 +48,10 @@
                         <input type="text" name="firstName" placeholder="First Name" required>
                         <input type="text" name="lastName" placeholder="Last Name" required>
                         <input type="email" name="email" placeholder="Email Address">
-                        <textarea name="summary" placeholder="Summary / Professional Bio (Markdown supported)"></textarea>
+                        <div class="textarea-wrapper">
+                            <textarea name="summary" placeholder="Summary / Professional Bio (Markdown supported)"></textarea>
+                            <button type="button" class="ai-assist-btn" data-target-name="summary" title="AI Assist">✨</button>
+                        </div>
                         <div class="file-input-wrapper">
                             <label>Profile Picture</label>
                              <div id="profile-pic-preview-container">
@@ -111,7 +114,7 @@
         </main>
     </div>
 
-    <!-- =========== Modal =========== -->
+    <!-- =========== Standard Modal =========== -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 id="modal-title">Confirmation</h3>
@@ -120,10 +123,39 @@
         </div>
     </div>
     
+    <!-- =========== AI Modal =========== -->
+    <div id="ai-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content ai-modal">
+            <h3 id="ai-modal-title">AI Assistant</h3>
+            <div id="ai-modal-initial">
+                <p>What would you like to do with the selected text?</p>
+                <div class="modal-actions">
+                    <button id="ai-improve-btn">Improve Writing</button>
+                    <button id="ai-bullets-btn">Generate Bullets</button>
+                    <button id="ai-cancel-btn">Cancel</button>
+                </div>
+            </div>
+            <div id="ai-modal-loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Thinking...</p>
+            </div>
+            <div id="ai-modal-result" class="hidden">
+                 <p>Here's a suggestion. You can edit it below.</p>
+                 <textarea id="ai-result-textarea"></textarea>
+                 <div class="modal-actions">
+                     <button id="ai-use-text-btn" class="primary-btn">Use This Text</button>
+                     <button id="ai-retry-btn">Retry</button>
+                     <button id="ai-back-btn">Back</button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
     <!-- =========== Notifications =========== -->
     <div id="notification-container"></div>
 
     <script type="module" src="app.js"></script>
+    <script type="module" src="ai.js"></script>
 </body>
 </html>
 
