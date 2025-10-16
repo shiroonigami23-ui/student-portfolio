@@ -1,5 +1,5 @@
 import { db, auth } from './firebase.js';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
 function getUserPortfoliosRef(userId) {
@@ -8,59 +8,65 @@ function getUserPortfoliosRef(userId) {
 }
 
 export async function getPortfolios(userId) {
-    const snapshot = await getDocs(getUserPortfoliosRef(userId));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const portfoliosRef = getUserPortfoliosRef(userId);
+    try {
+        const snapshot = await getDocs(portfoliosRef);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error fetching portfolios:", error);
+        throw error;
+    }
 }
 
 export async function getPortfolioById(userId, id) {
     if (!userId) return null;
-    const docRef = doc(db, 'users', userId, 'portfolios', id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    try {
+        const docRef = doc(db, 'users', userId, 'portfolios', id);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    } catch (error) {
+        console.error("Error fetching portfolio by ID:", error);
+        throw error;
+    }
 }
 
 export async function addPortfolio(userId, portfolioData) {
+    const portfoliosRef = getUserPortfoliosRef(userId);
+    // Use the logic from portfolio.js to create a structured object
     const newPortfolio = createPortfolio(portfolioData);
-    const docRef = await addDoc(getUserPortfoliosRef(userId), newPortfolio);
-    return docRef.id;
+    try {
+        const docRef = await addDoc(portfoliosRef, newPortfolio);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding portfolio:", error);
+        throw error;
+    }
 }
 
 export async function updatePortfolio(userId, id, updatedData) {
     const docRef = doc(db, 'users', userId, 'portfolios', id);
     const existingData = await getPortfolioById(userId, id);
+    // Use the logic from portfolio.js to prepare the update
     const dataToUpdate = updatePortfolioObject(existingData, updatedData);
+    
+    // Remove properties that shouldn't be in the final update payload
     delete dataToUpdate.id;
-    await updateDoc(docRef, dataToUpdate);
+    delete dataToUpdate.createdAt;
+
+    try {
+        await updateDoc(docRef, dataToUpdate);
+    } catch (error) {
+        console.error("Error updating portfolio:", error);
+        throw error;
+    }
 }
 
 export async function deletePortfolio(userId, id) {
     const docRef = doc(db, 'users', userId, 'portfolios', id);
-    await deleteDoc(docRef);
-}
-
-// --- PUBLIC/SHARING FUNCTIONS ---
-
-export async function makePortfolioPublic(portfolioId, portfolioData) {
-    const publicDocRef = doc(db, 'publicPortfolios', portfolioId);
-    await setDoc(publicDocRef, portfolioData);
-    const privateDocRef = doc(db, 'users', auth.currentUser.uid, 'portfolios', portfolioId);
-    await updateDoc(privateDocRef, { isPublic: true });
-}
-
-export async function makePortfolioPrivate(portfolioId) {
-    const publicDocRef = doc(db, 'publicPortfolios', portfolioId);
-    await deleteDoc(publicDocRef).catch(()=>{});
-    const privateDocRef = doc(db, 'users', auth.currentUser.uid, 'portfolios', portfolioId);
-    await updateDoc(privateDocRef, { isPublic: false });
-}
-
-export async function getPublicPortfolioById(portfolioId) {
     try {
-        const docRef = doc(db, 'publicPortfolios', portfolioId);
-        const docSnap = await getDoc(docRef);
-        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+        await deleteDoc(docRef);
     } catch (error) {
-        console.error("Error fetching public portfolio:", error);
-        return null;
+        console.error("Error deleting portfolio:", error);
+        throw error;
     }
 }

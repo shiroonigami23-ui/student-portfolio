@@ -1,11 +1,8 @@
 import { THEMES } from './config.js';
 
-// --- DOM Element Cache ---
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
-const shareModalOverlay = document.getElementById('share-modal-overlay');
-let activeAiTextarea = null;
 
 export const showdownConverter = new showdown.Converter({
     simpleLineBreaks: true,
@@ -13,33 +10,17 @@ export const showdownConverter = new showdown.Converter({
     tables: true,
 });
 
-// =================================================================================
-// --- 3. VIEW MANAGEMENT (THE ROBUST FIX) ---
-// This function is rewritten to be more robust and prevent multiple active views.
-// =================================================================================
 export function showView(viewId) {
-    // STEP A: First, loop through ALL elements with the .view class and
-    // explicitly REMOVE the .active class from them. This guarantees that we
-    // start from a clean slate and prevents the overlapping view bug.
     mainContent.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
+        view.classList.toggle('active', view.id === viewId);
     });
-
-    // STEP B: After all other views are hidden, find the single target view
-    // and ADD the .active class to it.
-    const targetView = document.getElementById(viewId);
-    if (targetView) {
-        targetView.classList.add('active');
-    } else {
-        console.error(`showView Error: A view with the ID "${viewId}" could not be found.`);
-    }
 }
-
 
 export function updateHeader(view, user) {
     headerActions.innerHTML = ''; // Clear previous state
 
     if (user) {
+        // Logged-in user view
         const themeSelectHTML = `
             <select id="theme-select" title="Change Theme">
                 ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
@@ -56,17 +37,20 @@ export function updateHeader(view, user) {
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
-            <div class="user-profile">
-                <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar" referrerpolicy="no-referrer">
-                <button id="logout-btn">Logout</button>
-            </div>`;
-        
-        const themeSelectElement = document.getElementById('theme-select');
-        if (themeSelectElement) {
-            themeSelectElement.value = localStorage.getItem('theme') || 'theme-space';
-        }
+            <button id="logout-btn">Logout</button>
+        `;
+
+        // Restore selected theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'theme-space';
+        populateThemes(savedTheme);
+        applyTheme(savedTheme);
+
+    } else {
+        // Logged-out view (login screen)
+        // Header is intentionally empty
     }
 }
+
 
 export function renderDashboard(portfolios) {
     const list = document.getElementById('portfolio-list');
@@ -74,14 +58,14 @@ export function renderDashboard(portfolios) {
         list.innerHTML = `<div class="empty-state"><p>No portfolios yet. Click "Create New" to start!</p></div>`;
         return;
     }
-    list.innerHTML = portfolios
-        .sort((a, b) => (b.lastModified?.toDate() || 0) - (a.lastModified?.toDate() || 0))
-        .map(p => `
-        <div class="portfolio-card ${p.isPublic ? 'public' : ''}">
+
+    list.innerHTML = portfolios.sort((a, b) => (b.lastModified?.toDate() || 0) - (a.lastModified?.toDate() || 0)) // Sort by most recently modified
+    .map(p => `
+        <div class="portfolio-card">
             <h3>${p.portfolioTitle || 'Untitled Portfolio'}</h3>
-            <p>Last modified: ${p.lastModified?.toDate() ? new Date(p.lastModified.toDate()).toLocaleString() : 'N/A'}</p>
+            <p>Last modified: ${p.lastModified && p.lastModified.toDate ? new Date(p.lastModified.toDate()).toLocaleString() : 'N/A'}</p>
             <div class="card-actions">
-                <button data-action="share" data-id="${p.id}" class="share-btn ${p.isPublic ? 'active' : ''}" title="Share Portfolio">Share</button>
+                <button data-action="export" data-id="${p.id}">Export</button>
                 <button data-action="preview" data-id="${p.id}">Preview</button>
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
                 <button data-action="delete" data-id="${p.id}" class="delete-btn">Delete</button>
@@ -90,84 +74,70 @@ export function renderDashboard(portfolios) {
     `).join('');
 }
 
-
-// --- Portfolio Rendering ---
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
+
     try {
-        // Use dynamic import to load only the template needed.
+        // Dynamically import the template module
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
         console.error(`Error loading template '${templateName}.js':`, error);
-        previewContainer.innerHTML = `<p class="error-message">Could not load portfolio template.</p>`;
+        previewContainer.innerHTML = `<p style="color: var(--color-error); text-align: center;">Could not load portfolio template. Make sure the file '/templates/${templateName}.js' exists and has no errors.</p>`;
     }
 }
 
 export function downloadAsPDF() {
     const content = document.getElementById('portfolio-preview-content');
-    const portfolioTitle = content.querySelector('h1')?.textContent || 'portfolio';
-    const opt = { margin: 0.5, filename: `${portfolioTitle.toLowerCase().replace(/\s+/g, '-')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+    // Use a more specific selector if h1 is not guaranteed to be the title
+    const portfolioTitle = content.querySelector('.preview-header h1')?.textContent || 'portfolio';
+    const opt = {
+        margin: 0.5,
+        filename: `${portfolioTitle.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
     html2pdf().from(content).set(opt).save();
 }
 
-// --- Theming ---
 export function applyTheme(themeName) {
+    // Ensure a default theme if none is provided
     document.body.className = themeName || 'theme-space';
 }
 
-// --- AI Modal ---
-export function showAiModal(textareaElement) {
-    activeAiTextarea = textareaElement;
-    setAiModalState('options');
+function populateThemes(currentTheme) {
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+        themeSelect.value = currentTheme;
+    }
+}
+
+
+// --- AI Modal Functions ---
+export function showAiModal() {
     aiModalOverlay.classList.remove('hidden');
 }
 
 export function hideAiModal() {
     aiModalOverlay.classList.add('hidden');
-    activeAiTextarea = null;
-}
-
-export function getActiveAiTextarea() {
-    return activeAiTextarea;
 }
 
 export function setAiModalState(state, text = '') {
-    const options = aiModalOverlay.querySelector('#ai-modal-options');
-    const loading = aiModalOverlay.querySelector('#ai-modal-loading');
-    const result = aiModalOverlay.querySelector('#ai-modal-result');
-    options.style.display = 'none';
-    loading.style.display = 'none';
-    result.style.display = 'none';
+    const optionsDiv = document.getElementById('ai-modal-options');
+    const loadingDiv = document.getElementById('ai-modal-loading');
+    const resultDiv = document.getElementById('ai-modal-result');
+    const resultTextarea = document.getElementById('ai-result-textarea');
 
-    if (state === 'options') options.style.display = 'block';
-    else if (state === 'loading') loading.style.display = 'block';
-    else if (state === 'result') {
-        result.style.display = 'block';
-        document.getElementById('ai-result-textarea').value = text;
+    [optionsDiv, loadingDiv, resultDiv].forEach(div => div.classList.add('hidden'));
+
+    if (state === 'options') {
+        optionsDiv.classList.remove('hidden');
+    } else if (state === 'loading') {
+        loadingDiv.classList.remove('hidden');
+    } else if (state === 'result') {
+        resultTextarea.value = text;
+        resultDiv.classList.remove('hidden');
     }
-}
-
-// --- Share Modal ---
-export function showShareModal(portfolioId, isPublic) {
-    const shareLinkInput = document.getElementById('share-link-input');
-    const shareModalActions = document.getElementById('share-modal-actions');
-    const modalTitle = document.getElementById('share-modal-title');
-    const link = `${window.location.origin}${window.location.pathname}?id=${portfolioId}`;
-    shareLinkInput.value = link;
-    shareLinkInput.style.display = isPublic ? 'block' : 'none';
-
-    if (isPublic) {
-        modalTitle.textContent = "Your Portfolio is Public";
-        shareModalActions.innerHTML = `<button id="copy-link-btn" class="primary-btn">Copy Link</button><button id="make-private-btn">Make Private</button><button id="close-share-btn">Close</button>`;
-    } else {
-        modalTitle.textContent = "Share Your Portfolio";
-        shareModalActions.innerHTML = `<button id="make-public-btn" class="primary-btn">Make Public & Get Link</button><button id="close-share-btn">Close</button>`;
-    }
-    shareModalOverlay.classList.remove('hidden');
-}
-
-export function hideShareModal() {
-    shareModalOverlay.classList.add('hidden');
 }
