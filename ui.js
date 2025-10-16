@@ -1,5 +1,6 @@
 import { THEMES } from './config.js';
 
+// --- DOM Element Cache ---
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
@@ -12,6 +13,7 @@ export const showdownConverter = new showdown.Converter({
     tables: true,
 });
 
+// --- View Management ---
 export function showView(viewId) {
     mainContent.querySelectorAll('.view').forEach(view => {
         view.classList.toggle('active', view.id === viewId);
@@ -19,12 +21,15 @@ export function showView(viewId) {
 }
 
 export function updateHeader(view, user) {
-    headerActions.innerHTML = '';
+    headerActions.innerHTML = ''; // Clear previous state
+
     if (user) {
+        // Build the HTML for the header elements
         const themeSelectHTML = `
             <select id="theme-select" title="Change Theme">
                 ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
             </select>`;
+
         let buttonsHTML = '';
         if (view === 'editor' || view === 'preview') {
             buttonsHTML = `<button id="back-to-dashboard-btn">Dashboard</button>`;
@@ -32,6 +37,8 @@ export function updateHeader(view, user) {
         if (view === 'preview') {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         }
+
+        // Set the final HTML
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
@@ -39,9 +46,15 @@ export function updateHeader(view, user) {
                 <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar" referrerpolicy="no-referrer">
                 <button id="logout-btn">Logout</button>
             </div>`;
-        const savedTheme = localStorage.getItem('theme') || 'theme-space';
-        document.getElementById('theme-select').value = savedTheme;
-        applyTheme(savedTheme);
+        
+        // ** THE FIX **
+        // Now, safely find the theme selector that was just created and set its value.
+        const themeSelectElement = document.getElementById('theme-select');
+        if (themeSelectElement) {
+            const savedTheme = localStorage.getItem('theme') || 'theme-space';
+            themeSelectElement.value = savedTheme;
+            applyTheme(savedTheme);
+        }
     }
 }
 
@@ -67,6 +80,8 @@ export function renderDashboard(portfolios) {
     `).join('');
 }
 
+
+// --- Portfolio Rendering ---
 export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
     const templateName = data.template || 'modern';
@@ -74,6 +89,7 @@ export async function renderPortfolioPreview(data) {
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
+        console.error(`Error loading template '${templateName}.js':`, error);
         previewContainer.innerHTML = `<p class="error-message">Could not load portfolio template.</p>`;
     }
 }
@@ -85,14 +101,12 @@ export function downloadAsPDF() {
     html2pdf().from(content).set(opt).save();
 }
 
+// --- Theming ---
 export function applyTheme(themeName) {
     document.body.className = themeName || 'theme-space';
 }
 
-export function getActiveAiTextarea() {
-    return activeAiTextarea;
-}
-
+// --- AI Modal ---
 export function showAiModal(textareaElement) {
     activeAiTextarea = textareaElement;
     setAiModalState('options');
@@ -102,6 +116,10 @@ export function showAiModal(textareaElement) {
 export function hideAiModal() {
     aiModalOverlay.classList.add('hidden');
     activeAiTextarea = null;
+}
+
+export function getActiveAiTextarea() {
+    return activeAiTextarea;
 }
 
 export function setAiModalState(state, text = '') {
@@ -119,6 +137,7 @@ export function setAiModalState(state, text = '') {
     }
 }
 
+// --- Share Modal ---
 export function showShareModal(portfolioId, isPublic) {
     const shareLinkInput = document.getElementById('share-link-input');
     const shareModalActions = document.getElementById('share-modal-actions');
