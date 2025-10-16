@@ -1,13 +1,10 @@
-
-// This module is responsible for rendering the "Classic" portfolio template.
 const showdownConverter = new showdown.Converter();
 
 export function render(data) {
-    const summaryHtml = data.summary ? showdownConverter.makeHtml(data.summary) : '';
-    
     return `
         <div class="portfolio-template classic">
             <aside class="sidebar">
+                 ${data.profilePic ? `<img src="${data.profilePic}" alt="Profile Picture" class="profile-pic">` : ''}
                 <header class="preview-header">
                     <h1>${data.firstName || ''} ${data.lastName || ''}</h1>
                     <h2>${data.portfolioTitle || 'Portfolio'}</h2>
@@ -33,7 +30,7 @@ export function render(data) {
             <main class="main-content">
                  <section class="preview-summary">
                     <h3>Summary</h3>
-                    <div>${summaryHtml}</div>
+                    <div>${data.summary ? showdownConverter.makeHtml(data.summary) : ''}</div>
                 </section>
                 <section class="preview-experience">
                     <h3>Work Experience</h3>
