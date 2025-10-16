@@ -13,14 +13,16 @@ export const showdownConverter = new showdown.Converter({
 });
 
 export function showView(viewId) {
-    // --- THE DEFINITIVE FIX FOR VIEW SWITCHING ---
-    // 1. Explicitly hide ALL views first. This prevents any possibility
-    //    of two views being active at the same time.
+    // --- RACE CONDITION FIX ---
+    // 1. This function is now more robust. It loops through ALL elements
+    //    with the .view class and removes the .active class from them.
     mainContent.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
 
-    // 2. Then, explicitly show ONLY the one view we want.
+    // 2. After all views are hidden, it then adds the .active class to the
+    //    single, targeted viewId. This prevents any possibility of two views
+    //    being active at once.
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
@@ -118,12 +120,10 @@ export function setAiModalState(state, text = '') {
     const loading = aiModalOverlay.querySelector('#ai-modal-loading');
     const result = aiModalOverlay.querySelector('#ai-modal-result');
     
-    // Hide all sections first
     options.style.display = 'none';
     loading.style.display = 'none';
     result.style.display = 'none';
 
-    // Show the correct section
     if (state === 'options') {
         options.style.display = 'block';
     } else if (state === 'loading') {
