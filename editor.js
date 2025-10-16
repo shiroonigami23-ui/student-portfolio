@@ -7,8 +7,8 @@ document.getElementById('next-step-btn').addEventListener('click', () => navigat
 document.getElementById('prev-step-btn').addEventListener('click', () => navigateSteps(-1));
 
 // Dynamic Item Buttons
-document.getElementById('add-skill-btn').addEventListener('click', addSkillItem);
-document.getElementById('add-project-btn').addEventListener('click', addProjectItem);
+document.getElementById('add-skill-btn').addEventListener('click', () => addSkillItem());
+document.getElementById('add-project-btn').addEventListener('click', () => addProjectItem());
 
 
 export function resetForm() {
@@ -27,7 +27,7 @@ export function populateForm(data) {
         const el = form.elements[key];
         if (el) {
             if(el.type === 'file') {
-                // Cannot pre-fill file inputs, but can show existing image if needed
+                // Cannot pre-fill file inputs
             } else {
                 el.value = data[key];
             }
@@ -35,11 +35,11 @@ export function populateForm(data) {
     });
 
     // Populate dynamic items
-    if (data.skills) {
+    if (data.skills && data.skills.length > 0) {
         document.getElementById('skills-editor').innerHTML = '';
         data.skills.forEach(s => addSkillItem(s));
     }
-    if (data.projects) {
+    if (data.projects && data.projects.length > 0) {
         document.getElementById('projects-editor').innerHTML = '';
         data.projects.forEach(p => addProjectItem(p));
     }
@@ -53,21 +53,14 @@ export function collectFormData() {
     }
 
     // Handle dynamic items
-    data.skills = Array.from(document.querySelectorAll('#skills-editor .item-card')).map(card => ({
+    data.skills = Array.from(document.querySelectorAll('#skills-editor .item-editor')).map(card => ({
         name: card.querySelector('[name="skillName"]').value,
         level: card.querySelector('[name="skillLevel"]').value
     }));
-    data.projects = Array.from(document.querySelectorAll('#projects-editor .item-card')).map(card => ({
+    data.projects = Array.from(document.querySelectorAll('#projects-editor .item-editor')).map(card => ({
         title: card.querySelector('[name="projectTitle"]').value,
         description: card.querySelector('[name="projectDescription"]').value
     }));
-    
-    // Handle file data as Base64 for storage
-    const picFile = form.elements.profilePic.files[0];
-    if (picFile) {
-        // In a real app, you'd handle the async nature of FileReader
-        // For simplicity, we'll ignore it for now but it won't save pic immediately
-    }
 
     return data;
 }
@@ -92,7 +85,7 @@ function showStep(stepNum) {
 function addSkillItem(skill = { name: '', level: 'Intermediate' }) {
     const container = document.getElementById('skills-editor');
     const div = document.createElement('div');
-    div.className = 'item-card';
+    div.className = 'item-editor';
     div.innerHTML = `
         <input type="text" name="skillName" placeholder="Skill (e.g., JavaScript)" value="${skill.name}">
         <select name="skillLevel">
@@ -101,17 +94,25 @@ function addSkillItem(skill = { name: '', level: 'Intermediate' }) {
             <option ${skill.level === 'Advanced' ? 'selected' : ''}>Advanced</option>
             <option ${skill.level === 'Expert' ? 'selected' : ''}>Expert</option>
         </select>
+        <button type="button" class="delete-btn item-delete-btn">Delete</button>
     `;
+    div.querySelector('.item-delete-btn').addEventListener('click', () => {
+        div.remove();
+    });
     container.appendChild(div);
 }
 
 function addProjectItem(project = { title: '', description: '' }) {
      const container = document.getElementById('projects-editor');
      const div = document.createElement('div');
-     div.className = 'item-card';
+     div.className = 'item-editor project-editor';
      div.innerHTML = `
         <input type="text" name="projectTitle" placeholder="Project Title" value="${project.title}">
         <textarea name="projectDescription" placeholder="Project Description">${project.description}</textarea>
+        <button type="button" class="delete-btn item-delete-btn">Delete</button>
      `;
+     div.querySelector('.item-delete-btn').addEventListener('click', () => {
+        div.remove();
+    });
      container.appendChild(div);
 }
