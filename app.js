@@ -3,7 +3,7 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
 import * as Storage from './storage.js';
-import { showAlert, showConfirmation } from './modal.js';
+import { showAlert, showConfirmation, showShareModal } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
 import { improveWriting, generateBulletPoints } from './ai.js';
@@ -17,13 +17,22 @@ async function init() {
     const shareId = urlParams.get('shareId');
 
     if (shareId) {
+        document.body.innerHTML = '<div class="spinner"></div>'; // Basic loading indicator
         const publicPortfolio = await Storage.getPublicPortfolio(shareId);
         if (publicPortfolio) {
-            UI.renderPortfolioPreview(publicPortfolio);
+            // Reload the main app structure for public view
+            const response = await fetch('index.html');
+            const appHtml = await response.text();
+            document.body.innerHTML = appHtml;
+            UI.applyTheme(publicPortfolio.theme || 'theme-space');
+            await UI.renderPortfolioPreview(publicPortfolio);
             UI.showView('preview-view');
             UI.updateHeader('public-preview', null);
+             document.getElementById('header-actions').addEventListener('click', e => {
+                if (e.target.closest('button')?.id === 'download-pdf-btn') UI.downloadAsPDF();
+            });
         } else {
-            showAlert("Not Found", "The portfolio you are looking for does not exist or is no longer shared.");
+            document.body.innerHTML = '<h2>Portfolio not found</h2>';
         }
         return;
     }
@@ -128,18 +137,13 @@ function setupEventListeners() {
     document.getElementById('ai-modal-overlay').addEventListener('click', async (e) => {
         const button = e.target.closest('button');
         if (!button) return;
-
         const action = button.dataset.action;
         if (!action) return;
-
         const originalText = activeTextarea ? activeTextarea.value : '';
-
         if (action === 'improve' || action === 'bullets') {
             UI.setAiModalState('loading');
             try {
-                const newText = action === 'improve'
-                    ? await improveWriting(originalText)
-                    : await generateBulletPoints(originalText);
+                const newText = action === 'improve' ? await improveWriting(originalText) : await generateBulletPoints(originalText);
                 UI.setAiModalState('result', newText);
             } catch (error) {
                 showAlert("AI Error", error.message);
@@ -172,12 +176,10 @@ async function navigateToEditor(id = null) {
 async function handleSavePortfolio() {
     const data = Editor.collectFormData();
     const validationErrors = validatePortfolio(data);
-
     if (validationErrors.length > 0) {
         showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
         return;
     }
-
     try {
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
@@ -196,8 +198,7 @@ async function handleSavePortfolio() {
 async function handleDelete(id) {
     try {
         await Storage.deletePortfolio(currentUser.uid, id);
-        portfoliosCache = portfoliosCache.filter(p => p.id !== id);
-        UI.renderDashboard(portfoliosCache);
+        navigateTo('dashboard'); // Refresh dashboard
         showToast("Portfolio deleted.", 'info');
     } catch (error) {
         showAlert("Delete Error", "Could not delete portfolio.");
@@ -233,10 +234,22 @@ function handleImport() {
 
 async function handleShare(id) {
     try {
-        const shareUrl = await Storage.makePortfolioPublic(currentUser.uid, id);
-        showAlert("Share Link", `Here is your shareable link:\n\n${shareUrl}`);
+        const portfolio = portfoliosCache.find(p => p.id === id);
+        if (portfolio && portfolio.isPublic) {
+            // If already public, just show the link
+            const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${id}`;
+            showShareModal(shareUrl);
+        } else {
+            // If not public, make it public first
+            const result = await Storage.togglePortfolioPublicStatus(currentUser.uid, id);
+            if (result.isPublic) {
+                showToast("Portfolio is now public!", 'success');
+                showShareModal(result.shareUrl);
+                navigateTo('dashboard'); // Refresh to show updated button state
+            }
+        }
     } catch (error) {
-        showAlert("Sharing Error", "Could not make the portfolio public. Please try again later.");
+        showAlert("Sharing Error", "Could not change the portfolio's public status.");
     }
 }
 
