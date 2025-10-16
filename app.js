@@ -18,7 +18,9 @@ let portfoliosCache = [];
 
 // --- INITIALIZATION ---
 function init() {
-    Editor.setupLiveValidation(); // Setup validation listeners
+    Editor.init(); // CRITICAL: Initialize the editor module first
+    Editor.setupLiveValidation(); 
+    
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
         if (user) {
