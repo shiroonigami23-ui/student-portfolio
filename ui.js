@@ -17,10 +17,15 @@ export function showView(viewId) {
 }
 
 export function updateHeader(view, user) {
-    headerActions.innerHTML = ''; // Clear previous state
+    headerActions.innerHTML = '';
+
+    if (view === 'public-preview') {
+        // Special header for public share link view
+        headerActions.innerHTML = `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
+        return;
+    }
 
     if (user) {
-        // Logged-in user view
         const themeSelectHTML = `
             <select id="theme-select" title="Change Theme">
                 ${Object.entries(THEMES).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
@@ -40,17 +45,12 @@ export function updateHeader(view, user) {
             <button id="logout-btn">Logout</button>
         `;
 
-        // Restore selected theme from localStorage
         const savedTheme = localStorage.getItem('theme') || 'theme-space';
         populateThemes(savedTheme);
         applyTheme(savedTheme);
 
-    } else {
-        // Logged-out view (login screen)
-        // Header is intentionally empty
     }
 }
-
 
 export function renderDashboard(portfolios) {
     const list = document.getElementById('portfolio-list');
@@ -59,12 +59,13 @@ export function renderDashboard(portfolios) {
         return;
     }
 
-    list.innerHTML = portfolios.sort((a, b) => (b.lastModified?.toDate() || 0) - (a.lastModified?.toDate() || 0)) // Sort by most recently modified
-    .map(p => `
+    list.innerHTML = portfolios.sort((a, b) => (b.lastModified?.toDate() || 0) - (a.lastModified?.toDate() || 0))
+        .map(p => `
         <div class="portfolio-card">
             <h3>${p.portfolioTitle || 'Untitled Portfolio'}</h3>
             <p>Last modified: ${p.lastModified && p.lastModified.toDate ? new Date(p.lastModified.toDate()).toLocaleString() : 'N/A'}</p>
             <div class="card-actions">
+                <button data-action="share" data-id="${p.id}">Share</button>
                 <button data-action="export" data-id="${p.id}">Export</button>
                 <button data-action="preview" data-id="${p.id}">Preview</button>
                 <button data-action="edit" data-id="${p.id}" class="primary-btn">Edit</button>
@@ -79,7 +80,6 @@ export async function renderPortfolioPreview(data) {
     const templateName = data.template || 'modern';
 
     try {
-        // Dynamically import the template module
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
     } catch (error) {
@@ -90,7 +90,6 @@ export async function renderPortfolioPreview(data) {
 
 export function downloadAsPDF() {
     const content = document.getElementById('portfolio-preview-content');
-    // Use a more specific selector if h1 is not guaranteed to be the title
     const portfolioTitle = content.querySelector('.preview-header h1')?.textContent || 'portfolio';
     const opt = {
         margin: 0.5,
@@ -103,7 +102,6 @@ export function downloadAsPDF() {
 }
 
 export function applyTheme(themeName) {
-    // Ensure a default theme if none is provided
     document.body.className = themeName || 'theme-space';
 }
 
@@ -114,8 +112,6 @@ function populateThemes(currentTheme) {
     }
 }
 
-
-// --- AI Modal Functions ---
 export function showAiModal() {
     aiModalOverlay.classList.remove('hidden');
 }
