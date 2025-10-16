@@ -1,7 +1,7 @@
 // Correctly import other JS files from the same (root) directory
 import * as UI from './ui.js';
 import * as Editor from './editor.js';
-import * as Portfolio from './portfolio.js'; 
+import * as Portfolio from './portfolio.js';
 import * as Storage from './storage.js';
 
 // --- State ---
@@ -11,16 +11,18 @@ let currentlyEditingId = null;
 // --- Initialization ---
 function init() {
     UI.populateThemes(Storage.getTheme());
+    UI.applyTheme(Storage.getTheme()); // Make sure theme is applied on load
     setupEventListeners();
     const portfolios = Storage.getPortfolios();
     UI.renderDashboard(portfolios);
-    UI.showView('dashboard');
+    // CORRECTED LINE: Use the full element ID 'dashboard-view'
+    UI.showView('dashboard-view');
 }
 
 // --- Event Listeners ---
 function setupEventListeners() {
     // Global Header Actions
-    document.getElementById('app-header').addEventListener('click', e => {
+    document.getElementById('header-actions').addEventListener('click', e => {
         if (e.target.id === 'back-to-dashboard-btn') {
             navigateTo('dashboard');
         }
@@ -40,20 +42,26 @@ function setupEventListeners() {
             Editor.resetForm();
             navigateTo('editor');
         }
-        if (e.target.dataset.action === 'edit') {
-            currentlyEditingId = e.target.dataset.id;
+        const target = e.target.closest('button');
+        if (!target) return;
+        
+        const action = target.dataset.action;
+        const id = target.dataset.id;
+
+        if (action === 'edit') {
+            currentlyEditingId = id;
             const portfolio = Storage.getPortfolioById(currentlyEditingId);
             Editor.populateForm(portfolio);
             navigateTo('editor');
         }
-        if (e.target.dataset.action === 'delete') {
+        if (action === 'delete') {
             if (confirm('Are you sure you want to delete this portfolio?')) {
-                Storage.deletePortfolio(e.target.dataset.id);
+                Storage.deletePortfolio(id);
                 UI.renderDashboard(Storage.getPortfolios());
             }
         }
-        if (e.target.dataset.action === 'preview') {
-            const portfolio = Storage.getPortfolioById(e.target.dataset.id);
+        if (action === 'preview') {
+            const portfolio = Storage.getPortfolioById(id);
             navigateTo('preview', portfolio);
         }
     });
@@ -75,11 +83,12 @@ function setupEventListeners() {
         }
     });
 
-    // Theme Selector
-    document.addEventListener('change', e => {
+    // Theme Selector in header
+    document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'theme-select') {
-            UI.applyTheme(e.target.value);
-            Storage.saveTheme(e.target.value);
+            const newTheme = e.target.value;
+            UI.applyTheme(newTheme);
+            Storage.saveTheme(newTheme);
         }
     });
 }
@@ -88,13 +97,14 @@ function setupEventListeners() {
 function navigateTo(view, data = null) {
     currentView = view;
     UI.updateHeader(view, data);
-    
+
     switch (view) {
         case 'dashboard':
             UI.renderDashboard(Storage.getPortfolios());
             UI.showView('dashboard-view');
             break;
         case 'editor':
+             document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
             UI.showView('editor-view');
             break;
         case 'preview':
