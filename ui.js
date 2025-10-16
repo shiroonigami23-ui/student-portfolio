@@ -47,13 +47,11 @@ export function updateHeader(view, user) {
                 <button id="logout-btn">Logout</button>
             </div>`;
         
-        // ** THE FIX **
-        // Now, safely find the theme selector that was just created and set its value.
+        // Safely find the theme selector that was just created and set its value
+        // based on the user's preference in localStorage.
         const themeSelectElement = document.getElementById('theme-select');
         if (themeSelectElement) {
-            const savedTheme = localStorage.getItem('theme') || 'theme-space';
-            themeSelectElement.value = savedTheme;
-            applyTheme(savedTheme);
+            themeSelectElement.value = localStorage.getItem('theme') || 'theme-space';
         }
     }
 }
