@@ -117,12 +117,18 @@ export function setAiModalState(state, text = '') {
     const options = aiModalOverlay.querySelector('#ai-modal-options');
     const loading = aiModalOverlay.querySelector('#ai-modal-loading');
     const result = aiModalOverlay.querySelector('#ai-modal-result');
+    
+    // Hide all sections first
     options.style.display = 'none';
     loading.style.display = 'none';
     result.style.display = 'none';
-    if (state === 'options') options.style.display = 'block';
-    else if (state === 'loading') loading.style.display = 'block';
-    else if (state === 'result') {
+
+    // Show the correct section
+    if (state === 'options') {
+        options.style.display = 'block';
+    } else if (state === 'loading') {
+        loading.style.display = 'block';
+    } else if (state === 'result') {
         result.style.display = 'block';
         document.getElementById('ai-result-textarea').value = text;
     }
