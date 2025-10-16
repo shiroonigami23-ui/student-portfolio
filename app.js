@@ -5,17 +5,45 @@ import * as AI from './ai.js';
 import { showConfirmation, showAlert } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolioData } from './validator.js';
+import { auth } from './firebase.js';
+import { onAuthStateChanged, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 
 let currentView = 'dashboard';
 let currentlyEditingId = null;
 
-function init() {
+// --- Authentication ---
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // User is signed in.
+        UI.updateAuthUI(user);
+        initApp(); // Initialize the main app functionality
+    } else {
+        // User is signed out.
+        UI.updateAuthUI(null);
+        UI.showView('login-view'); // Show a login view if not logged in
+    }
+});
+
+function handleGoogleLogin() {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(error => {
+        console.error("Google Sign-in Error", error);
+        showAlert("Login Failed", "Could not sign in with Google. Please try again.");
+    });
+}
+
+function handleLogout() {
+    signOut(auth);
+}
+
+// --- App Initialization ---
+async function initApp() {
     UI.populateThemes(Storage.getTheme());
     UI.applyTheme(Storage.getTheme());
     Editor.setupLiveValidation();
     setupEventListeners();
-    UI.renderDashboard(Storage.getPortfolios());
-    UI.showView('dashboard-view');
+    await navigateTo('dashboard');
 }
 
 function setupEventListeners() {
@@ -23,6 +51,14 @@ function setupEventListeners() {
         if (e.target.id === 'back-to-dashboard-btn') await navigateTo('dashboard');
         if (e.target.id === 'preview-portfolio-btn') await navigateTo('preview', Editor.collectFormData());
         if (e.target.id === 'download-pdf-btn') UI.downloadAsPDF();
+        if (e.target.id === 'logout-btn') handleLogout();
+    });
+
+    // Event listener for login button
+    document.getElementById('main-content').addEventListener('click', e => {
+        if (e.target.id === 'google-login-btn') {
+            handleGoogleLogin();
+        }
     });
 
     document.getElementById('dashboard-view').addEventListener('click', async (e) => {
@@ -40,7 +76,7 @@ function setupEventListeners() {
             const id = target.dataset.id;
             if (!action || !id) return;
 
-            const portfolio = Storage.getPortfolioById(id);
+            const portfolio = await Storage.getPortfolioById(id);
             if (!portfolio) return;
 
             if (action === 'edit') {
@@ -52,9 +88,9 @@ function setupEventListeners() {
                 showConfirmation(
                     'Delete Portfolio',
                     'Are you sure you want to delete this portfolio? This action cannot be undone.',
-                    () => {
-                        Storage.deletePortfolio(id);
-                        UI.renderDashboard(Storage.getPortfolios());
+                    async () => {
+                        await Storage.deletePortfolio(id);
+                        await navigateTo('dashboard');
                         showToast('Portfolio deleted.', 'info');
                     }
                 );
@@ -84,10 +120,10 @@ function setupEventListeners() {
 
             if (currentlyEditingId) {
                 data.id = currentlyEditingId;
-                Storage.updatePortfolio(data);
+                await Storage.updatePortfolio(data);
                 showToast('Portfolio updated successfully!', 'success');
             } else {
-                Storage.addPortfolio(data);
+                await Storage.addPortfolio(data);
                 showToast('Portfolio created successfully!', 'success');
             }
             await navigateTo('dashboard');
@@ -104,7 +140,6 @@ function setupEventListeners() {
     });
 }
 
-// --- AI Modal Handling ---
 let activeTextarea = null;
 let lastAiAction = null;
 const aiModal = {
@@ -159,11 +194,8 @@ aiModal.cancelBtn.addEventListener('click', () => aiModal.overlay.classList.add(
 aiModal.useTextBtn.addEventListener('click', () => {
     activeTextarea.value = aiModal.resultTextarea.value;
     aiModal.overlay.classList.add('hidden');
-    // Trigger input event for live validation
     activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
 });
-// --- End AI Modal Handling ---
-
 
 function handleExport(portfolio) {
     const dataStr = JSON.stringify(portfolio, null, 2);
@@ -177,7 +209,7 @@ function handleExport(portfolio) {
     URL.revokeObjectURL(url);
 }
 
-function handleImport() {
+async function handleImport() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,application/json';
@@ -185,12 +217,12 @@ function handleImport() {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = async e => {
             try {
                 const importedData = JSON.parse(e.target.result);
                 if (importedData.portfolioTitle && importedData.firstName) {
-                    Storage.addPortfolio(importedData);
-                    UI.renderDashboard(Storage.getPortfolios());
+                    await Storage.addPortfolio(importedData);
+                    await navigateTo('dashboard');
                     showToast('Portfolio imported successfully!', 'success');
                 } else {
                     showAlert('Import Error', 'The selected file is not a valid portfolio.');
@@ -211,7 +243,8 @@ async function navigateTo(view, data = null) {
 
     switch (view) {
         case 'dashboard':
-            UI.renderDashboard(Storage.getPortfolios());
+            const portfolios = await Storage.getPortfolios();
+            UI.renderDashboard(portfolios);
             UI.showView('dashboard-view');
             break;
         case 'editor':
@@ -224,5 +257,3 @@ async function navigateTo(view, data = null) {
             break;
     }
 }
-
-document.addEventListener('DOMContentLoaded', init);
