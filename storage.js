@@ -1,3 +1,4 @@
+// Correctly import portfolio.js from the same (root) directory
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
 const PORTFOLIO_KEY = 'portfolioApp.portfolios';
