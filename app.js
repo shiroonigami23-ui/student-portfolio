@@ -18,6 +18,7 @@ let portfoliosCache = [];
 
 // --- INITIALIZATION ---
 function init() {
+    Editor.setupLiveValidation(); // Setup validation listeners
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
         if (user) {
@@ -32,15 +33,8 @@ function init() {
 
 // --- AUTHENTICATION HANDLERS ---
 async function handleUserLoggedIn(user) {
-    UI.showView('dashboard-view');
-    UI.updateHeader('dashboard', user);
-    try {
-        portfoliosCache = await Storage.getPortfolios(user.uid);
-        UI.renderDashboard(portfoliosCache);
-    } catch (error) {
-        console.error("Error fetching portfolios:", error);
-        showAlert("Error", "Could not fetch your portfolios. Please try again later.");
-    }
+    UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
+    navigateTo('dashboard');
 }
 
 function handleUserLoggedOut() {
@@ -51,29 +45,21 @@ function handleUserLoggedOut() {
 }
 
 async function handleGoogleSignIn() {
-    console.log("Attempting to sign in with Google...");
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(auth, provider);
-        console.log("Sign-in successful!", result.user);
-        // onAuthStateChanged will handle the rest of the UI updates.
+        await signInWithPopup(auth, provider);
+        // onAuthStateChanged will handle the rest
     } catch (error) {
         console.error("Google Sign-In Error:", error);
-        if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/auth-domain-config-error') {
-             showAlert("Sign-In Configuration Error", "Please ensure that your domain (e.g., localhost, your-site.github.io) is added to the 'Authorized domains' list in your Firebase Authentication settings.");
-        } else {
-            showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
-        }
+        showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
     }
 }
 
 async function handleLogout() {
     try {
         await signOut(auth);
-        // onAuthStateChanged will handle the rest.
     } catch (error) {
         console.error("Logout Error:", error);
-        showAlert("Error", "Failed to log out. Please try again.");
     }
 }
 
@@ -81,138 +67,123 @@ async function handleLogout() {
 // --- EVENT LISTENERS ---
 function setupEventListeners() {
 
-    // Main Content Event Delegation for better performance
     document.getElementById('main-content').addEventListener('click', async e => {
-        const target = e.target.closest('button');
-        if (!target) return; // Exit if the click wasn't on or in a button
+        const button = e.target.closest('button');
+        if (!button) return;
 
-        const targetId = target.id;
-        const action = target.dataset.action;
-        const id = target.dataset.id;
+        const { id } = button;
+        const { action, id: dataId } = button.dataset;
 
-        // Login / Create / Import
-        if (targetId === 'google-signin-btn') return handleGoogleSignIn();
-        if (targetId === 'create-new-btn') {
-            currentlyEditingId = null;
-            Editor.resetForm();
-            return navigateTo('editor');
-        }
-        if (targetId === 'import-portfolio-btn') return handleImport();
+        if (id === 'google-signin-btn') return handleGoogleSignIn();
+        if (id === 'create-new-btn') return navigateToEditor();
+        if (id === 'import-portfolio-btn') return handleImport();
+        if (id === 'save-portfolio-btn') return handleSavePortfolio();
+        if (id === 'cancel-edit-btn') return navigateTo('dashboard');
         
-        // Portfolio Card Actions
-        if (action && id) {
-            switch(action) {
-                case 'edit':
-                    currentlyEditingId = id;
-                    const portfolioToEdit = await Storage.getPortfolioById(currentUser.uid, id);
-                    Editor.populateForm(portfolioToEdit);
-                    navigateTo('editor');
-                    break;
-                case 'delete':
-                    showConfirmation(
-                        "Delete Portfolio?",
-                        "This action cannot be undone. Are you sure you want to permanently delete this portfolio?",
-                        () => handleDelete(id)
-                    );
-                    break;
+        if (action && dataId) {
+            switch (action) {
+                case 'edit': return navigateToEditor(dataId);
+                case 'delete': return showConfirmation("Delete Portfolio?", "This action is permanent.", () => handleDelete(dataId));
                 case 'preview':
-                    const portfolioToPreview = await Storage.getPortfolioById(currentUser.uid, id);
-                    navigateTo('preview', portfolioToPreview);
+                    const portfolio = portfoliosCache.find(p => p.id === dataId);
+                    if(portfolio) navigateTo('preview', portfolio);
                     break;
-                case 'export':
-                    handleExport(id);
-                    break;
+                case 'export': return handleExport(dataId);
             }
-        }
-    });
-
-    // Editor View Actions
-    document.getElementById('save-portfolio-btn').addEventListener('click', handleSavePortfolio);
-    document.getElementById('cancel-edit-btn').addEventListener('click', () => navigateTo('dashboard'));
-    
-    // Header Actions
-    document.getElementById('header-actions').addEventListener('change', e => {
-        if (e.target.id === 'theme-select') {
-            const newTheme = e.target.value;
-            UI.applyTheme(newTheme);
         }
     });
     
     document.getElementById('header-actions').addEventListener('click', e => {
-        if (e.target.id === 'logout-btn') handleLogout();
-        if (e.target.id === 'back-to-dashboard-btn') navigateTo('dashboard');
-        if (e.target.id === 'download-pdf-btn') UI.downloadAsPDF();
+        const button = e.target.closest('button');
+        if (!button) return;
+        if (button.id === 'logout-btn') handleLogout();
+        if (button.id === 'back-to-dashboard-btn') navigateTo('dashboard');
+        if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
+    });
+
+    document.getElementById('header-actions').addEventListener('change', e => {
+        if (e.target.id === 'theme-select') {
+            const newTheme = e.target.value;
+            UI.applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
     });
 
     // AI Modal Actions
     let activeTextarea = null;
     document.getElementById('editor-view').addEventListener('click', (e) => {
         if (e.target.classList.contains('ai-assist-btn')) {
-            activeTextarea = e.target.previousElementSibling;
+            activeTextarea = e.target.closest('.textarea-wrapper').querySelector('textarea');
+            UI.setAiModalState('options');
             UI.showAiModal();
         }
     });
 
-    document.getElementById('ai-modal').addEventListener('click', async (e) => {
-        const action = e.target.dataset.action;
-        if (!action || !activeTextarea) return;
+    document.getElementById('ai-modal-overlay').addEventListener('click', async (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
 
-        const originalText = activeTextarea.value;
-        let newText = originalText;
+        const action = button.dataset.action;
+        if (!action) return;
+
+        const originalText = activeTextarea ? activeTextarea.value : '';
 
         if (action === 'improve' || action === 'bullets') {
             UI.setAiModalState('loading');
             try {
-                if (action === 'improve') {
-                    newText = await improveWithAI(originalText);
-                } else if (action === 'bullets') {
-                    newText = await generateBulletPoints(originalText);
-                }
-                
-                if (newText && newText !== originalText) {
-                    activeTextarea.value = newText;
-                    activeTextarea.dispatchEvent(new Event('input', { bubbles: true })); // Trigger validation
-                }
-                UI.setAiModalState('result'); // Show result/options
+                const newText = action === 'improve'
+                    ? await improveWithAI(originalText)
+                    : await generateBulletPoints(originalText);
+                UI.setAiModalState('result', newText);
             } catch (error) {
-                console.error("AI Assist Error:", error);
-                showAlert("AI Error", "Could not process the request. Please check your API key and try again.");
-                UI.setAiModalState('options'); // Reset on error
-            }
-        } else if (action === 'close' || action === 'use-text') {
-            UI.hideAiModal();
-            setTimeout(() => {
+                showAlert("AI Error", error.message);
                 UI.setAiModalState('options');
-                activeTextarea = null; // Clear active textarea
-            }, 300);
+            }
+        } else if (action === 'use-text') {
+            if (activeTextarea) {
+                activeTextarea.value = document.getElementById('ai-result-textarea').value;
+                activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            UI.hideAiModal();
+        } else if (action === 'close') {
+            UI.hideAiModal();
         }
     });
 }
 
 
 // --- DATA & NAVIGATION ---
+async function navigateToEditor(id = null) {
+    currentlyEditingId = id;
+    if (id) {
+        const portfolioToEdit = await Storage.getPortfolioById(currentUser.uid, id);
+        Editor.populateForm(portfolioToEdit);
+    } else {
+        Editor.resetForm();
+    }
+    navigateTo('editor');
+}
+
 async function handleSavePortfolio() {
     const data = Editor.collectFormData();
     const validationErrors = validatePortfolio(data);
 
     if (validationErrors.length > 0) {
         const errorList = validationErrors.map(err => `<li>${err.message}</li>`).join('');
-        showAlert("Validation Error", `Please fix the following issues:<ul style="text-align: left; margin-top: 1rem;">${errorList}</ul>`);
-        return;
+        return showAlert("Validation Error", `Please fix the following issues:<ul>${errorList}</ul>`);
     }
 
     try {
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
-            showToast("Portfolio updated successfully!");
+            showToast("Portfolio updated!", 'success');
         } else {
             await Storage.addPortfolio(currentUser.uid, data);
-            showToast("Portfolio saved successfully!");
+            showToast("Portfolio saved!", 'success');
         }
         navigateTo('dashboard');
     } catch (error) {
-        console.error("Save portfolio error:", error);
-        showAlert("Error", "Could not save the portfolio. Please try again.");
+        showAlert("Save Error", "Could not save portfolio.");
     }
 }
 
@@ -223,28 +194,21 @@ async function handleDelete(id) {
         UI.renderDashboard(portfoliosCache);
         showToast("Portfolio deleted.");
     } catch (error) {
-        console.error("Delete portfolio error:", error);
-        showAlert("Error", "Could not delete the portfolio. Please try again.");
+        showAlert("Delete Error", "Could not delete portfolio.");
     }
 }
 
 async function handleExport(id) {
-    try {
-        const portfolio = await Storage.getPortfolioById(currentUser.uid, id);
-        const jsonString = JSON.stringify(portfolio, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error("Export error:", error);
-        showAlert("Error", "Could not export the portfolio.");
-    }
+    const portfolio = portfoliosCache.find(p => p.id === id);
+    if (!portfolio) return;
+    const jsonString = JSON.stringify(portfolio, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 function handleImport() {
@@ -257,16 +221,12 @@ function handleImport() {
         const reader = new FileReader();
         reader.onload = async (event) => {
             try {
-                const portfolioData = JSON.parse(event.target.result);
-                delete portfolioData.id; // Treat as a new portfolio
-                delete portfolioData.createdAt;
-
-                await Storage.addPortfolio(currentUser.uid, portfolioData);
+                const data = JSON.parse(event.target.result);
+                await Storage.addPortfolio(currentUser.uid, data);
                 navigateTo('dashboard');
-                showToast("Portfolio imported successfully!");
+                showToast("Portfolio imported!", 'success');
             } catch (error) {
-                console.error("Import error:", error);
-                showAlert("Import Failed", "The selected file is not a valid portfolio JSON file.");
+                showAlert("Import Failed", "Invalid portfolio file.");
             }
         };
         reader.readAsText(file);
@@ -279,7 +239,6 @@ async function navigateTo(view, data = null) {
     UI.updateHeader(view, currentUser);
     switch (view) {
         case 'dashboard':
-            // Refetch data every time we navigate to dashboard to ensure it's fresh
             portfoliosCache = await Storage.getPortfolios(currentUser.uid);
             UI.renderDashboard(portfoliosCache);
             UI.showView('dashboard-view');
@@ -289,8 +248,10 @@ async function navigateTo(view, data = null) {
             UI.showView('editor-view');
             break;
         case 'preview':
-            await UI.renderPortfolioPreview(data);
-            UI.showView('preview-view');
+            if (data) {
+                await UI.renderPortfolioPreview(data);
+                UI.showView('preview-view');
+            }
             break;
     }
 }
