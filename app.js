@@ -94,7 +94,6 @@ function setupEventListeners() {
                     const portfolio = portfoliosCache.find(p => p.id === dataId);
                     if (portfolio) navigateTo('preview', portfolio);
                     break;
-                case 'export': return handleExport(dataId);
                 case 'share': return handleShare(dataId);
             }
         }
@@ -109,7 +108,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('header-actions').addEventListener('change', e => {
-        if (e.target.id === 'theme-select') {
+        if (e.target.id === 'app-theme-select') {
             const newTheme = e.target.value;
             UI.applyTheme(newTheme);
             localStorage.setItem('theme', newTheme);
@@ -203,22 +202,6 @@ async function handleDelete(id) {
     } catch (error) {
         showAlert("Delete Error", "Could not delete portfolio.");
     }
-}
-
-async function handleExport(id) {
-    const portfolio = portfoliosCache.find(p => p.id === id);
-    if (!portfolio) return;
-    const { createdAt, lastModified, ...exportData } = portfolio;
-    const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${portfolio.portfolioTitle.replace(/\s+/g, '_') || 'portfolio'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 }
 
 function handleImport() {
