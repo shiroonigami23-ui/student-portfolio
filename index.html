@@ -8,7 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
-
+    <!-- Added SortableJS for drag-and-drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body class="theme-space">
 
@@ -50,26 +51,34 @@
                         <input type="text" name="lastName" placeholder="Last Name" required>
                         <input type="email" name="email" placeholder="Email Address">
                         <textarea name="summary" placeholder="Summary / Professional Bio (Markdown supported)"></textarea>
-                        <div class="file-input-wrapper">
-                            <label for="profile-pic">Profile Picture</label>
-                            <input type="file" id="profile-pic" name="profilePic" accept="image/*">
-                        </div>
                     </div>
                     
                     <div class="form-step" data-step="2">
-                        <h3><span class="step-indicator">2</span> Skills & Experience</h3>
-                        <div id="skills-editor"></div>
-                        <button type="button" class="add-item-btn" id="add-skill-btn">+ Add Skill</button>
+                        <h3><span class="step-indicator">2</span> Work Experience</h3>
+                        <div id="experience-editor" class="draggable-list"></div>
+                        <button type="button" class="add-item-btn" id="add-experience-btn">+ Add Experience</button>
                     </div>
 
                     <div class="form-step" data-step="3">
-                        <h3><span class="step-indicator">3</span> Projects</h3>
-                        <div id="projects-editor"></div>
-                        <button type="button" class="add-item-btn" id="add-project-btn">+ Add Project</button>
+                        <h3><span class="step-indicator">3</span> Education</h3>
+                        <div id="education-editor" class="draggable-list"></div>
+                        <button type="button" class="add-item-btn" id="add-education-btn">+ Add Education</button>
                     </div>
 
                     <div class="form-step" data-step="4">
-                        <h3><span class="step-indicator">4</span> Customization</h3>
+                        <h3><span class="step-indicator">4</span> Skills</h3>
+                        <div id="skills-editor" class="draggable-list"></div>
+                        <button type="button" class="add-item-btn" id="add-skill-btn">+ Add Skill</button>
+                    </div>
+
+                    <div class="form-step" data-step="5">
+                        <h3><span class="step-indicator">5</span> Projects</h3>
+                        <div id="projects-editor" class="draggable-list"></div>
+                        <button type="button" class="add-item-btn" id="add-project-btn">+ Add Project</button>
+                    </div>
+
+                    <div class="form-step" data-step="6">
+                        <h3><span class="step-indicator">6</span> Customization</h3>
                         <label for="template-select">Choose a Template:</label>
                         <select name="template" id="template-select">
                             <option value="modern">Modern</option>
@@ -97,9 +106,7 @@
         </main>
     </div>
 
-    <!-- Correctly call app.js from the root directory -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
-
 
