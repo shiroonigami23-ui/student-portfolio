@@ -33,6 +33,7 @@ export function resetForm() {
     removeProfilePic();
     currentStep = 1;
     showStep(currentStep);
+    // Add one of each item to start
     addWorkItem(); 
     addEducationItem();
     addSkillItem();
@@ -40,10 +41,18 @@ export function resetForm() {
 }
 
 export function populateForm(data) {
-    resetForm();
+    // Reset everything except the dynamic lists, which we will manage
+    form.reset();
+    removeProfilePic();
+     ['experience-editor', 'education-editor', 'skills-editor', 'projects-editor'].forEach(id => {
+        document.getElementById(id).innerHTML = '';
+    });
+
     Object.keys(data).forEach(key => {
         const el = form.elements[key];
-        if (el) el.value = data[key];
+        if (el && el.type !== 'file') {
+             el.value = data[key];
+        }
     });
 
     if (data.profilePic) {
@@ -55,8 +64,11 @@ export function populateForm(data) {
     const populateSection = (key, adder) => {
         if (data[key] && data[key].length > 0) {
             const editorId = `${key === 'experience' ? 'experience' : key}-editor`;
-            document.getElementById(editorId).innerHTML = '';
+            document.getElementById(editorId).innerHTML = ''; // Clear before populating
             data[key].forEach(item => adder(item));
+        } else {
+             // If there's no data for a section, ensure at least one empty item is present
+             adder();
         }
     };
     
@@ -64,6 +76,10 @@ export function populateForm(data) {
     populateSection('education', addEducationItem);
     populateSection('skills', addSkillItem);
     populateSection('projects', addProjectItem);
+    
+    // Set the initial step and show it
+    currentStep = 1;
+    showStep(currentStep);
 }
 
 export function collectFormData() {
@@ -73,6 +89,7 @@ export function collectFormData() {
         if (key !== 'profilePicInput') data[key] = value;
     }
     
+    // Only save the base64 string if it's a valid data URL
     data.profilePic = profilePicPreview.src.startsWith('data:image') ? profilePicPreview.src : null;
 
     data.experience = mapEditorItems('#experience-editor', card => ({
@@ -145,7 +162,12 @@ function createDeletableItem(container, html) {
     const div = document.createElement('div');
     div.className = 'item-editor';
     div.innerHTML = html;
-    div.querySelector('.item-delete-btn').addEventListener('click', () => div.remove());
+    div.querySelector('.item-delete-btn').addEventListener('click', () => {
+        // Prevent deleting the last item in a list
+        if (container.children.length > 1) {
+            div.remove();
+        }
+    });
     container.appendChild(div);
 }
 
