@@ -1,13 +1,12 @@
 import { isNotEmpty, isValidEmail, isValidUrl } from './validator.js';
+import { THEMES } from './config.js';
 
 // --- MODULE SCOPED VARIABLES ---
-// These are declared here but will be assigned a value in the init() function
 let form, steps, profilePicInput, profilePicPreview, removePicBtn;
 let currentStep = 1;
 
 /**
  * Initializes the editor module by finding all necessary DOM elements.
- * This MUST be called after the DOM is fully loaded.
  */
 export function init() {
     form = document.getElementById('portfolio-form');
@@ -16,7 +15,6 @@ export function init() {
     profilePicPreview = document.getElementById('profile-pic-preview');
     removePicBtn = document.getElementById('remove-pic-btn');
 
-    // Attach event listeners that are internal to the editor
     document.getElementById('next-step-btn').addEventListener('click', () => navigateSteps(1));
     document.getElementById('prev-step-btn').addEventListener('click', () => navigateSteps(-1));
     document.getElementById('add-experience-btn').addEventListener('click', () => addWorkItem());
@@ -26,7 +24,14 @@ export function init() {
     profilePicInput.addEventListener('change', handleImageUpload);
     removePicBtn.addEventListener('click', removeProfilePic);
 
-    // Initialize drag-and-drop
+    // Populate the portfolio theme dropdown
+    const portfolioThemeSelect = document.getElementById('portfolio-theme-select');
+    if (portfolioThemeSelect) {
+        portfolioThemeSelect.innerHTML = Object.entries(THEMES)
+            .map(([key, value]) => `<option value="${key}">${value}</option>`)
+            .join('');
+    }
+
     ['experience-editor', 'education-editor', 'skills-editor', 'projects-editor'].forEach(id => {
         const el = document.getElementById(id);
         if (el) new Sortable(el, { animation: 150, handle: '.item-editor' });
@@ -99,7 +104,7 @@ export function populateForm(data) {
         if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
             data[key].forEach(item => adder(item));
         } else {
-             adder(); // Add one empty item if the section is empty
+             adder(); 
         }
     };
 
@@ -119,7 +124,6 @@ export function collectFormData() {
         if (key !== 'profilePicInput') data[key] = value;
     }
 
-    // Only include profile pic if it's a new base64 image
     data.profilePic = profilePicPreview.src.startsWith('data:image') ? profilePicPreview.src : (profilePicPreview.src.startsWith('http') ? profilePicPreview.src : null);
 
 
@@ -128,7 +132,7 @@ export function collectFormData() {
         company: card.querySelector('[name="company"]').value.trim(),
         dates: card.querySelector('[name="jobDates"]').value.trim(),
         description: card.querySelector('[name="jobDescription"]').value.trim()
-    })).filter(item => item.title || item.company); // Filter out empty items
+    })).filter(item => item.title || item.company);
 
     data.education = mapEditorItems('#education-editor', card => ({
         degree: card.querySelector('[name="degree"]').value.trim(),
@@ -166,7 +170,7 @@ function handleImageUpload(event) {
 }
 
 function removeProfilePic() {
-    profilePicInput.value = ''; // Clear the file input
+    profilePicInput.value = '';
     profilePicPreview.src = '#';
     profilePicPreview.classList.add('hidden');
     removePicBtn.classList.add('hidden');
@@ -197,11 +201,9 @@ function createDeletableItem(container, html) {
     div.className = 'item-editor';
     div.innerHTML = html;
     div.querySelector('.item-delete-btn').addEventListener('click', () => {
-        // Prevent deleting the last item to avoid empty sections
         if (container.children.length > 1) {
             div.remove();
         } else {
-            // Clear fields of the last item instead of removing it
             div.querySelectorAll('input, textarea, select').forEach(input => {
                 if(input.type === 'select-one') {
                     input.selectedIndex = 0;
