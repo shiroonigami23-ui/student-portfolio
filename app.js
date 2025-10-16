@@ -22,26 +22,25 @@ async function init() {
         return;
     }
 
-    // --- THE DEFINITIVE FIX FOR THE LOGIN SCREEN ---
-    // 1. Establish a clear, non-ambiguous starting state for the UI.
-    //    We explicitly show the login view FIRST, before doing anything else.
-    //    This prevents any flicker or race conditions.
+    // --- RACE CONDITION FIX ---
+    // 1. Immediately and definitively set the UI to a known starting state.
+    //    This prevents any flicker or rendering of the wrong view on load.
     UI.showView('login-view');
     UI.updateHeader('login', null);
 
     Editor.init();
     Editor.setupLiveValidation();
 
-    // 2. Set up the listener that will react to Firebase's authentication check.
+    // 2. Set up the Firebase listener. This is asynchronous.
     onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            // 3. Firebase has now confirmed a user is logged in.
-            //    We can now definitively switch to the dashboard.
+            // 3. ONLY after Firebase confirms a user is logged in,
+            //    we switch to the dashboard view.
             await handleUserLoggedIn(user);
         } else {
-            // 4. Firebase has confirmed NO user is logged in.
-            //    The view is already correctly set to 'login-view'.
+            // 4. If Firebase confirms no user is logged in, we ensure
+            //    the correct logged-out state is shown.
             handleUserLoggedOut();
         }
     });
@@ -81,18 +80,21 @@ async function handlePublicView(portfolioId) {
 
 // --- EVENT LISTENERS SETUP ---
 function setupAllEventListeners() {
-    // Handles all clicks within the main content area
+    // This listener handles all clicks within the main content area
     document.getElementById('main-content').addEventListener('click', mainContentClickHandler);
+    
     // Handles clicks within the header
     document.getElementById('header-actions').addEventListener('click', headerClickHandler);
+    
     // Handles theme changes from the header dropdown
     document.getElementById('header-actions').addEventListener('change', headerChangeHandler);
+    
     // Handles all clicks within the Share Modal
     document.getElementById('share-modal-overlay').addEventListener('click', shareModalClickHandler);
     
-    // --- THE DEFINITIVE FIX FOR THE AI MODAL ---
-    // A separate, dedicated event listener for the AI modal overlay, which
-    // is outside of the #main-content element.
+    // --- UNRESPONSIVE MODAL FIX ---
+    // This adds a new, dedicated event listener specifically for the AI modal,
+    // which exists outside of the #main-content element.
     document.getElementById('ai-modal-overlay').addEventListener('click', aiModalClickHandler);
 }
 
@@ -172,11 +174,14 @@ async function shareModalClickHandler(e) {
     }
 }
 
+// This handler is now correctly wired up in setupAllEventListeners
 async function aiModalClickHandler(e) {
     const button = e.target.closest('button');
     if (!button) return;
     const { action } = button.dataset;
     const activeTextarea = UI.getActiveAiTextarea();
+    
+    // Only return early if an action requires a textarea and we don't have one.
     if (!activeTextarea && action !== 'close') return;
 
     if (action === 'improve' || action === 'bullets') {
@@ -248,7 +253,6 @@ function handleImport() {
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
-                // Basic validation to ensure it looks like a portfolio
                 if (data.portfolioTitle && data.firstName) {
                     await Storage.addPortfolio(currentUser.uid, data);
                     navigateTo('dashboard');
