@@ -2,7 +2,7 @@ import { THEMES } from './config.js';
 
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
-const showdownConverter = new showdown.Converter(); // For Markdown
+// Showdown converter is no longer needed here, it's moved to the template modules.
 
 /**
  * Shows a specific view and hides others.
@@ -43,7 +43,6 @@ export function updateHeader(view) {
             <button id="back-to-dashboard-btn" class="primary-btn">Back to Dashboard</button>
         `;
     }
-    // Repopulate themes after changing header content
     populateThemes(document.body.className);
 }
 
@@ -72,69 +71,22 @@ export function renderDashboard(portfolios) {
 }
 
 /**
- * Renders the portfolio data into the preview area.
+ * Renders the portfolio data into the preview area using dynamic templates.
  * @param {object} data - The portfolio data object.
  */
-export function renderPortfolioPreview(data) {
+export async function renderPortfolioPreview(data) {
     const previewContainer = document.getElementById('portfolio-preview-content');
-    const summaryHtml = data.summary ? showdownConverter.makeHtml(data.summary) : '';
+    const templateName = data.template || 'modern'; // Default to 'modern'
 
-    previewContainer.innerHTML = `
-        <div class="portfolio-template modern">
-            <header class="preview-header" style="text-align: center; margin-bottom: 2rem;">
-                <h1>${data.firstName || ''} ${data.lastName || ''}</h1>
-                <h2>${data.portfolioTitle || 'Portfolio'}</h2>
-                <p>${data.email || ''}</p>
-            </header>
-            <section class="preview-summary" style="margin-bottom: 2rem;">
-                <h3>Summary</h3>
-                <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                <div>${summaryHtml}</div>
-            </section>
-
-            <section class="preview-experience" style="margin-bottom: 2rem;">
-                <h3>Work Experience</h3>
-                <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                ${(data.experience || []).map(exp => `
-                    <div class="item" style="margin-bottom: 1.5rem;">
-                        <h4 style="color: var(--accent-primary);">${exp.title} <span style="color: var(--text-secondary); font-weight: normal;">at ${exp.company}</span></h4>
-                        <p style="font-style: italic; color: var(--text-secondary); font-size: 0.9em;">${exp.dates}</p>
-                        <div>${showdownConverter.makeHtml(exp.description)}</div>
-                    </div>
-                `).join('')}
-            </section>
-            
-            <section class="preview-education" style="margin-bottom: 2rem;">
-                <h3>Education</h3>
-                <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                 ${(data.education || []).map(edu => `
-                    <div class="item" style="margin-bottom: 1rem;">
-                        <h4 style="color: var(--accent-primary);">${edu.degree}</h4>
-                        <p style="color: var(--text-secondary);">${edu.institution} - ${edu.year}</p>
-                    </div>
-                `).join('')}
-            </section>
-
-            <section class="preview-skills" style="margin-bottom: 2rem;">
-                <h3>Skills</h3>
-                 <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px;">
-                    ${(data.skills || []).map(s => `<li style="background: var(--bg-primary); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-color);">${s.name} (${s.level})</li>`).join('')}
-                </ul>
-            </section>
-
-            <section class="preview-projects">
-                <h3>Projects</h3>
-                 <hr style="margin: 0.5rem 0; border-color: var(--border-color);">
-                ${(data.projects || []).map(p => `
-                    <div class="project-item" style="margin-bottom: 1.5rem;">
-                        <h4 style="color: var(--accent-primary);">${p.title}</h4>
-                        <p>${p.description}</p>
-                    </div>
-                `).join('')}
-            </section>
-        </div>
-    `;
+    try {
+        // Dynamically import the template module based on the selected template
+        const templateModule = await import(`./templates/${templateName}.js`);
+        // Call the render function from the imported module
+        previewContainer.innerHTML = templateModule.render(data);
+    } catch (error) {
+        console.error(`Error loading template '${templateName}':`, error);
+        previewContainer.innerHTML = `<p style="color: red; text-align: center;">Could not load the '${templateName}' template.</p>`;
+    }
 }
 
 
@@ -159,7 +111,7 @@ export function downloadAsPDF() {
  * @param {string} themeName - The theme class name (e.g., 'theme-space').
  */
 export function applyTheme(themeName) {
-    document.body.className = ''; // Remove all classes first
+    document.body.className = '';
     if(themeName) document.body.classList.add(themeName);
 }
 
