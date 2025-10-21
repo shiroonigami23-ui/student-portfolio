@@ -3,6 +3,7 @@ import { THEMES } from './config.js';
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
+const aiDraftModalOverlay = document.getElementById('ai-draft-modal-overlay'); // New draft modal
 
 export const showdownConverter = new showdown.Converter({
     simpleLineBreaks: true,
@@ -112,6 +113,8 @@ function populateAppThemeSelector(currentTheme) {
     }
 }
 
+// --- AI MODAL FUNCTIONS ---
+
 export function showAiModal() {
     aiModalOverlay.classList.remove('hidden');
 }
@@ -136,4 +139,15 @@ export function setAiModalState(state, text = '') {
         resultTextarea.value = text;
         resultDiv.classList.remove('hidden');
     }
+}
+
+// --- NEW AI DRAFT MODAL FUNCTIONS ---
+
+export function showAiDraftModal() {
+    aiDraftModalOverlay.classList.remove('hidden');
+    document.getElementById('ai-draft-role-input').value = '';
+}
+
+export function hideAiDraftModal() {
+    aiDraftModalOverlay.classList.add('hidden');
 }
