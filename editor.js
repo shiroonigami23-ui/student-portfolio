@@ -4,6 +4,7 @@ import { THEMES } from './config.js';
 // --- MODULE SCOPED VARIABLES ---
 let form, steps, profilePicInput, profilePicPreview, removePicBtn;
 let currentStep = 1;
+let profilePicFile = null; // Variable to hold the actual file object
 
 /**
  * Initializes the editor module by finding all necessary DOM elements.
@@ -124,7 +125,10 @@ export function collectFormData() {
         if (key !== 'profilePicInput') data[key] = value;
     }
 
-    data.profilePic = profilePicPreview.src.startsWith('data:image') ? profilePicPreview.src : (profilePicPreview.src.startsWith('http') ? profilePicPreview.src : null);
+    // Pass the actual file object if one is selected,
+    // and the existing URL if there is one.
+    data.profilePicFile = profilePicFile;
+    data.profilePicUrl = profilePicPreview.src.startsWith('http') ? profilePicPreview.src : null;
 
 
     data.experience = mapEditorItems('#experience-editor', card => ({
@@ -159,6 +163,7 @@ export function collectFormData() {
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
+        profilePicFile = file; // Store the file object
         const reader = new FileReader();
         reader.onload = (e) => {
             profilePicPreview.src = e.target.result;
@@ -170,6 +175,7 @@ function handleImageUpload(event) {
 }
 
 function removeProfilePic() {
+    profilePicFile = null; // Clear the file object
     profilePicInput.value = '';
     profilePicPreview.src = '#';
     profilePicPreview.classList.add('hidden');
