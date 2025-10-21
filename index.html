@@ -37,6 +37,8 @@
                 <h2>Your Portfolios</h2>
                 <div class="dashboard-actions">
                     <button id="create-new-btn" class="primary-btn">+ Create New Portfolio</button>
+                    <!-- NEW AI DRAFT BUTTON -->
+                    <button id="ai-draft-btn">✨ Generate with AI</button>
                     <button id="import-portfolio-btn">Import Portfolio</button>
                 </div>
                 <div id="portfolio-list"></div>
@@ -132,7 +134,7 @@
         </div>
     </div>
     
-    <!-- =========== AI Modal =========== -->
+    <!-- =========== Text AI Modal =========== -->
     <div id="ai-modal-overlay" class="modal-overlay hidden">
         <div class="modal-content ai-modal">
             <h3 id="ai-modal-title">AI Assistant</h3>
@@ -155,6 +157,19 @@
                      <button data-action="use-text" class="primary-btn">Use This Text</button>
                      <button data-action="close">Back</button>
                  </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== NEW: AI First Draft Modal =========== -->
+    <div id="ai-draft-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content ai-modal">
+            <h3>Generate First Draft</h3>
+            <p>Describe the role you want a portfolio for. Be specific for best results!</p>
+            <input type="text" id="ai-draft-role-input" placeholder="e.g., 'Student Graphic Designer', 'Junior Python Developer'">
+            <div class="modal-actions">
+                <button id="ai-draft-generate-btn" class="primary-btn">Generate</button>
+                <button id="ai-draft-cancel-btn">Cancel</button>
             </div>
         </div>
     </div>
