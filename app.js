@@ -7,6 +7,7 @@ import { showAlert, showConfirmation, showShareModal } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
 import { improveWriting, generateBulletPoints } from './ai.js';
+import { uploadImage } from './cloudinary.js'; // <-- IMPORT THE NEW FUNCTION
 
 let currentUser = null;
 let currentlyEditingId = null;
@@ -174,13 +175,35 @@ async function navigateToEditor(id = null) {
 }
 
 async function handleSavePortfolio() {
+    const saveButton = document.getElementById('save-portfolio-btn');
     const data = Editor.collectFormData();
+    
     const validationErrors = validatePortfolio(data);
     if (validationErrors.length > 0) {
         showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
         return;
     }
+
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
+
     try {
+        // --- NEW IMAGE UPLOAD LOGIC ---
+        if (data.profilePicFile) {
+            // If there's a new file, upload it
+            showToast('Uploading image...', 'info', 10000); // Show for 10s
+            const imageUrl = await uploadImage(data.profilePicFile);
+            data.profilePic = imageUrl;
+        } else {
+            // Otherwise, use the existing URL (or null if it was removed)
+            data.profilePic = data.profilePicUrl;
+        }
+
+        // Clean up helper properties before saving to Firestore
+        delete data.profilePicFile;
+        delete data.profilePicUrl;
+        // --- END OF NEW LOGIC ---
+
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
             showToast("Portfolio updated!", 'success');
@@ -191,7 +214,10 @@ async function handleSavePortfolio() {
         navigateTo('dashboard');
     } catch (error) {
         console.error("Save Error:", error);
-        showAlert("Save Error", "Could not save portfolio. Check console for details.");
+        showAlert("Save Error", `Could not save portfolio: ${error.message}`);
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save';
     }
 }
 
