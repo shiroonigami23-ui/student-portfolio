@@ -2,6 +2,56 @@ import { db } from './firebase.js';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { createPortfolio, updatePortfolio as updatePortfolioObject } from './portfolio.js';
 
+// --- USER PROFILE FUNCTIONS ---
+
+/**
+ * Gets a reference to the user's profile document.
+ * @param {string} userId The user's unique ID.
+ * @returns A DocumentReference for the user's profile.
+ */
+function getUserProfileRef(userId) {
+    if (!userId) throw new Error("User not authenticated.");
+    // We store user profile data in a separate 'profiles' collection
+    // to keep it distinct from the main user data potentially used by Firebase Auth.
+    return doc(db, 'users', userId, 'profile', 'data');
+}
+
+
+/**
+ * Retrieves a user's profile data (e.g., profile picture URL).
+ * @param {string} userId The user's unique ID.
+ * @returns {Promise<object|null>} The user profile data or null if not found.
+ */
+export async function getUserProfile(userId) {
+    const profileRef = getUserProfileRef(userId);
+    try {
+        const docSnap = await getDoc(profileRef);
+        return docSnap.exists() ? docSnap.data() : null;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        throw error;
+    }
+}
+
+/**
+ * Updates a user's profile data.
+ * @param {string} userId The user's unique ID.
+ * @param {object} data The data to update (e.g., { photoURL: '...' }).
+ */
+export async function updateUserProfile(userId, data) {
+    const profileRef = getUserProfileRef(userId);
+    try {
+        // Use setDoc with merge: true to create or update the document.
+        await setDoc(profileRef, data, { merge: true });
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
+}
+
+
+// --- PORTFOLIO FUNCTIONS (Unchanged) ---
+
 function getUserPortfoliosRef(userId) {
     if (!userId) throw new Error("User not authenticated.");
     return collection(db, 'users', userId, 'portfolios');
@@ -74,15 +124,16 @@ export async function togglePortfolioPublicStatus(userId, id) {
 
     const newStatus = !portfolio.isPublic;
     const userPortfolioRef = doc(db, 'users', userId, 'portfolios', id);
-    await updateDoc(userPortfolioRef, { isPublic: newStatus });
-
     const publicPortfolioRef = doc(db, 'publicPortfolios', id);
 
+    const publicData = { ...portfolio, isPublic: newStatus };
+    delete publicData.id;
+
     if (newStatus) {
-        // Make public: copy data to public collection
-        await setDoc(publicPortfolioRef, portfolio);
+        await updateDoc(userPortfolioRef, { isPublic: newStatus });
+        await setDoc(publicPortfolioRef, publicData);
     } else {
-        // Make private: delete from public collection
+        await updateDoc(userPortfolioRef, { isPublic: newStatus });
         await deleteDoc(publicPortfolioRef);
     }
 
