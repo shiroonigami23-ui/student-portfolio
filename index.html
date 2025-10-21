@@ -19,7 +19,9 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <h1>Portfolio Architect</h1>
             </div>
-            <div id="header-actions"></div>
+            <div id="header-actions">
+                <!-- Profile Avatar will be inserted here by JS -->
+            </div>
         </header>
 
         <main id="main-content">
@@ -33,11 +35,37 @@
                 </div>
             </div>
 
+            <!-- =========== NEW: Profile View =========== -->
+            <div id="profile-view" class="view">
+                <div class="profile-card">
+                    <div class="profile-pic-large-wrapper">
+                        <img id="profile-pic-large" src="https://placehold.co/150x150/0D1117/c9d1d9?text=Avatar" alt="Your Profile Picture">
+                        <label for="profile-pic-upload-input" class="profile-pic-edit-btn">Change</label>
+                        <input type="file" id="profile-pic-upload-input" accept="image/*" style="display: none;">
+                    </div>
+                    <h2 id="profile-name">User Name</h2>
+                    <p id="profile-email">user@email.com</p>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-total">0</span>
+                            <span class="stat-label">Total Portfolios</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-public">0</span>
+                            <span class="stat-label">Public</span>
+                        </div>
+                        <div class="stat-item">
+                             <span class="stat-number" id="stat-private">0</span>
+                            <span class="stat-label">Private</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="dashboard-view" class="view">
                 <h2>Your Portfolios</h2>
                 <div class="dashboard-actions">
                     <button id="create-new-btn" class="primary-btn">+ Create New Portfolio</button>
-                    <!-- NEW AI DRAFT BUTTON -->
                     <button id="ai-draft-btn">✨ Generate with AI</button>
                     <button id="import-portfolio-btn">Import Portfolio</button>
                 </div>
@@ -53,6 +81,7 @@
                     </div>
                 </div>
                 <form id="portfolio-form" novalidate>
+                    <!-- Form content unchanged -->
                     <div class="form-step active" data-step="1">
                         <h3><span class="step-indicator">1</span> Basic Information</h3>
                         <input type="text" name="portfolioTitle" placeholder="Portfolio Title (e.g., 'Web Dev Portfolio')" required>
@@ -125,7 +154,7 @@
         </main>
     </div>
 
-    <!-- =========== Standard Modal =========== -->
+    <!-- Modals (Unchanged) -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 id="modal-title">Confirmation</h3>
@@ -133,8 +162,6 @@
             <div id="modal-actions" class="modal-actions"></div>
         </div>
     </div>
-    
-    <!-- =========== Text AI Modal =========== -->
     <div id="ai-modal-overlay" class="modal-overlay hidden">
         <div class="modal-content ai-modal">
             <h3 id="ai-modal-title">AI Assistant</h3>
@@ -160,8 +187,6 @@
             </div>
         </div>
     </div>
-
-    <!-- =========== NEW: AI First Draft Modal =========== -->
     <div id="ai-draft-modal-overlay" class="modal-overlay hidden">
         <div class="modal-content ai-modal">
             <h3>Generate First Draft</h3>
@@ -174,10 +199,10 @@
         </div>
     </div>
 
-    <!-- =========== Notifications =========== -->
     <div id="notification-container"></div>
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
