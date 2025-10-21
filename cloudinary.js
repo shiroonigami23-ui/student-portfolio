@@ -7,7 +7,7 @@
 // 5. Copy the preset name here.
 
 const CLOUD_NAME = 'dlqo2eyvb'; // <--- REPLACE WITH YOUR CLOUD NAME
-const UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET'; // <--- REPLACE WITH YOUR UPLOAD PRESET NAME
+const UPLOAD_PRESET = 'hxpuk4gj'; // <--- REPLACE WITH YOUR UPLOAD PRESET NAME
 
 const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
