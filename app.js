@@ -6,8 +6,9 @@ import * as Storage from './storage.js';
 import { showAlert, showConfirmation, showShareModal } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
-import { improveWriting, generateBulletPoints } from './ai.js';
-import { uploadImage } from './cloudinary.js'; // <-- IMPORT THE NEW FUNCTION
+// Import all AI functions, including the new one
+import { improveWriting, generateBulletPoints, generateFirstDraft } from './ai.js';
+import { uploadImage } from './cloudinary.js';
 
 let currentUser = null;
 let currentlyEditingId = null;
@@ -18,10 +19,9 @@ async function init() {
     const shareId = urlParams.get('shareId');
 
     if (shareId) {
-        document.body.innerHTML = '<div class="spinner"></div>'; // Basic loading indicator
+        document.body.innerHTML = '<div class="spinner"></div>';
         const publicPortfolio = await Storage.getPublicPortfolio(shareId);
         if (publicPortfolio) {
-            // Reload the main app structure for public view
             const response = await fetch('index.html');
             const appHtml = await response.text();
             document.body.innerHTML = appHtml;
@@ -83,6 +83,7 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
+    // Main content event listener
     document.getElementById('main-content').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -95,6 +96,8 @@ function setupEventListeners() {
         if (id === 'import-portfolio-btn') return handleImport();
         if (id === 'save-portfolio-btn') return handleSavePortfolio();
         if (id === 'cancel-edit-btn') return navigateTo('dashboard');
+        // --- NEW --- Listener for the AI Draft button
+        if (id === 'ai-draft-btn') return UI.showAiDraftModal(); 
 
         if (action && dataId) {
             switch (action) {
@@ -109,6 +112,11 @@ function setupEventListeners() {
         }
     });
 
+    // --- NEW --- AI Draft Modal event listeners
+    document.getElementById('ai-draft-generate-btn').addEventListener('click', handleGenerateDraft);
+    document.getElementById('ai-draft-cancel-btn').addEventListener('click', UI.hideAiDraftModal);
+
+    // Header actions event listeners (unchanged)
     document.getElementById('header-actions').addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -125,6 +133,7 @@ function setupEventListeners() {
         }
     });
 
+    // AI text-assist modal listeners (unchanged)
     let activeTextarea = null;
     document.getElementById('editor-view').addEventListener('click', (e) => {
         const button = e.target.closest('button');
@@ -163,6 +172,37 @@ function setupEventListeners() {
     });
 }
 
+// --- NEW --- Handler for the AI Draft Generation
+async function handleGenerateDraft() {
+    const roleInput = document.getElementById('ai-draft-role-input');
+    const role = roleInput.value.trim();
+    if (!role) {
+        showAlert("Input Required", "Please enter a role or job title.");
+        return;
+    }
+
+    const generateBtn = document.getElementById('ai-draft-generate-btn');
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+
+    try {
+        showToast('AI is building your portfolio draft...', 'info', 10000);
+        const draftData = await generateFirstDraft(role);
+        
+        UI.hideAiDraftModal();
+        navigateToEditor(); // Navigate to a blank editor
+        Editor.populateForm(draftData); // Populate it with AI data
+        showToast('First draft generated!', 'success');
+        
+    } catch (error) {
+        showAlert("AI Generation Failed", `An error occurred: ${error.message}`);
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate';
+        roleInput.value = '';
+    }
+}
+
 async function navigateToEditor(id = null) {
     currentlyEditingId = id;
     if (id) {
@@ -188,21 +228,15 @@ async function handleSavePortfolio() {
     saveButton.textContent = 'Saving...';
 
     try {
-        // --- NEW IMAGE UPLOAD LOGIC ---
         if (data.profilePicFile) {
-            // If there's a new file, upload it
-            showToast('Uploading image...', 'info', 10000); // Show for 10s
+            showToast('Uploading image...', 'info', 10000);
             const imageUrl = await uploadImage(data.profilePicFile);
             data.profilePic = imageUrl;
         } else {
-            // Otherwise, use the existing URL (or null if it was removed)
             data.profilePic = data.profilePicUrl;
         }
-
-        // Clean up helper properties before saving to Firestore
         delete data.profilePicFile;
         delete data.profilePicUrl;
-        // --- END OF NEW LOGIC ---
 
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
@@ -224,7 +258,7 @@ async function handleSavePortfolio() {
 async function handleDelete(id) {
     try {
         await Storage.deletePortfolio(currentUser.uid, id);
-        navigateTo('dashboard'); // Refresh dashboard
+        navigateTo('dashboard');
         showToast("Portfolio deleted.", 'info');
     } catch (error) {
         showAlert("Delete Error", "Could not delete portfolio.");
@@ -262,16 +296,14 @@ async function handleShare(id) {
     try {
         const portfolio = portfoliosCache.find(p => p.id === id);
         if (portfolio && portfolio.isPublic) {
-            // If already public, just show the link
             const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${id}`;
             showShareModal(shareUrl);
         } else {
-            // If not public, make it public first
             const result = await Storage.togglePortfolioPublicStatus(currentUser.uid, id);
             if (result.isPublic) {
                 showToast("Portfolio is now public!", 'success');
                 showShareModal(result.shareUrl);
-                navigateTo('dashboard'); // Refresh to show updated button state
+                navigateTo('dashboard');
             }
         }
     } catch (error) {
