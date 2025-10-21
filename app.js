@@ -6,13 +6,14 @@ import * as Storage from './storage.js';
 import { showAlert, showConfirmation, showShareModal } from './modal.js';
 import { showToast } from './notifications.js';
 import { validatePortfolio } from './validator.js';
-// Import all AI functions, including the new one
 import { improveWriting, generateBulletPoints, generateFirstDraft } from './ai.js';
 import { uploadImage } from './cloudinary.js';
 
 let currentUser = null;
+let userProfile = null; // To store user's custom profile data
 let currentlyEditingId = null;
 let portfoliosCache = [];
+let currentView = 'login'; // To track current view for navigation
 
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -28,7 +29,7 @@ async function init() {
             UI.applyTheme(publicPortfolio.theme || 'theme-space');
             await UI.renderPortfolioPreview(publicPortfolio);
             UI.showView('preview-view');
-            UI.updateHeader('public-preview', null);
+            UI.updateHeader('public-preview', null, null);
              document.getElementById('header-actions').addEventListener('click', e => {
                 if (e.target.closest('button')?.id === 'download-pdf-btn') UI.downloadAsPDF();
             });
@@ -41,10 +42,10 @@ async function init() {
     Editor.init();
     Editor.setupLiveValidation();
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            handleUserLoggedIn(user);
+            await handleUserLoggedIn(user);
         } else {
             handleUserLoggedOut();
         }
@@ -53,14 +54,17 @@ async function init() {
 }
 
 async function handleUserLoggedIn(user) {
+    userProfile = await Storage.getUserProfile(user.uid);
     UI.applyTheme(localStorage.getItem('theme') || 'theme-space');
     navigateTo('dashboard');
 }
 
 function handleUserLoggedOut() {
+    currentUser = null;
+    userProfile = null;
     portfoliosCache = [];
     currentlyEditingId = null;
-    UI.updateHeader('login', null);
+    UI.updateHeader('login', null, null);
     UI.showView('login-view');
 }
 
@@ -69,7 +73,6 @@ async function handleGoogleSignIn() {
     try {
         await signInWithPopup(auth, provider);
     } catch (error) {
-        console.error("Google Sign-In Error:", error);
         showAlert("Sign-In Failed", `An unexpected error occurred: ${error.message}`);
     }
 }
@@ -83,11 +86,9 @@ async function handleLogout() {
 }
 
 function setupEventListeners() {
-    // Main content event listener
     document.getElementById('main-content').addEventListener('click', async e => {
         const button = e.target.closest('button');
         if (!button) return;
-
         const { id } = button;
         const { action, id: dataId } = button.dataset;
 
@@ -96,8 +97,7 @@ function setupEventListeners() {
         if (id === 'import-portfolio-btn') return handleImport();
         if (id === 'save-portfolio-btn') return handleSavePortfolio();
         if (id === 'cancel-edit-btn') return navigateTo('dashboard');
-        // --- NEW --- Listener for the AI Draft button
-        if (id === 'ai-draft-btn') return UI.showAiDraftModal(); 
+        if (id === 'ai-draft-btn') return UI.showAiDraftModal();
 
         if (action && dataId) {
             switch (action) {
@@ -112,18 +112,20 @@ function setupEventListeners() {
         }
     });
 
-    // --- NEW --- AI Draft Modal event listeners
+    document.getElementById('header-actions').addEventListener('click', e => {
+        const target = e.target;
+        if (target.id === 'logout-btn') handleLogout();
+        if (target.id === 'back-to-dashboard-btn') navigateTo('dashboard');
+        if (target.id === 'download-pdf-btn') UI.downloadAsPDF();
+        if (target.id === 'header-avatar-btn') {
+            navigateTo(currentView === 'profile' ? 'dashboard' : 'profile');
+        }
+    });
+
+    document.getElementById('profile-pic-upload-input').addEventListener('change', handleProfilePicUpload);
+
     document.getElementById('ai-draft-generate-btn').addEventListener('click', handleGenerateDraft);
     document.getElementById('ai-draft-cancel-btn').addEventListener('click', UI.hideAiDraftModal);
-
-    // Header actions event listeners (unchanged)
-    document.getElementById('header-actions').addEventListener('click', e => {
-        const button = e.target.closest('button');
-        if (!button) return;
-        if (button.id === 'logout-btn') handleLogout();
-        if (button.id === 'back-to-dashboard-btn') navigateTo('dashboard');
-        if (button.id === 'download-pdf-btn') UI.downloadAsPDF();
-    });
 
     document.getElementById('header-actions').addEventListener('change', e => {
         if (e.target.id === 'app-theme-select') {
@@ -133,7 +135,6 @@ function setupEventListeners() {
         }
     });
 
-    // AI text-assist modal listeners (unchanged)
     let activeTextarea = null;
     document.getElementById('editor-view').addEventListener('click', (e) => {
         const button = e.target.closest('button');
@@ -172,7 +173,26 @@ function setupEventListeners() {
     });
 }
 
-// --- NEW --- Handler for the AI Draft Generation
+async function handleProfilePicUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    showToast('Uploading new profile picture...', 'info');
+    try {
+        const photoURL = await uploadImage(file);
+        await Storage.updateUserProfile(currentUser.uid, { photoURL });
+        userProfile = { ...userProfile, photoURL };
+        
+        UI.renderProfileView(currentUser, userProfile, portfoliosCache);
+        UI.updateHeader(currentView, currentUser, userProfile);
+        
+        showToast('Profile picture updated!', 'success');
+    } catch (error) {
+        console.error("Profile picture upload error:", error);
+        showAlert("Upload Failed", `Could not update profile picture: ${error.message}`);
+    }
+}
+
 async function handleGenerateDraft() {
     const roleInput = document.getElementById('ai-draft-role-input');
     const role = roleInput.value.trim();
@@ -180,20 +200,16 @@ async function handleGenerateDraft() {
         showAlert("Input Required", "Please enter a role or job title.");
         return;
     }
-
     const generateBtn = document.getElementById('ai-draft-generate-btn');
     generateBtn.disabled = true;
     generateBtn.textContent = 'Generating...';
-
     try {
         showToast('AI is building your portfolio draft...', 'info', 10000);
         const draftData = await generateFirstDraft(role);
-        
         UI.hideAiDraftModal();
-        navigateToEditor(); // Navigate to a blank editor
-        Editor.populateForm(draftData); // Populate it with AI data
+        navigateToEditor();
+        Editor.populateForm(draftData);
         showToast('First draft generated!', 'success');
-        
     } catch (error) {
         showAlert("AI Generation Failed", `An error occurred: ${error.message}`);
     } finally {
@@ -217,16 +233,13 @@ async function navigateToEditor(id = null) {
 async function handleSavePortfolio() {
     const saveButton = document.getElementById('save-portfolio-btn');
     const data = Editor.collectFormData();
-    
     const validationErrors = validatePortfolio(data);
     if (validationErrors.length > 0) {
-        showAlert("Validation Error", `Please fix the following issues:\n${validationErrors.map(e => e.message).join('\n')}`);
+        showAlert("Validation Error", `Please fix these issues:\n${validationErrors.map(e => e.message).join('\n')}`);
         return;
     }
-
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
-
     try {
         if (data.profilePicFile) {
             showToast('Uploading image...', 'info', 10000);
@@ -237,7 +250,6 @@ async function handleSavePortfolio() {
         }
         delete data.profilePicFile;
         delete data.profilePicUrl;
-
         if (currentlyEditingId) {
             await Storage.updatePortfolio(currentUser.uid, currentlyEditingId, data);
             showToast("Portfolio updated!", 'success');
@@ -312,12 +324,18 @@ async function handleShare(id) {
 }
 
 async function navigateTo(view, data = null) {
-    UI.updateHeader(view, currentUser);
+    currentView = view;
+    UI.updateHeader(view, currentUser, userProfile);
     switch (view) {
         case 'dashboard':
             portfoliosCache = await Storage.getPortfolios(currentUser.uid);
             UI.renderDashboard(portfoliosCache);
             UI.showView('dashboard-view');
+            break;
+        case 'profile':
+            portfoliosCache = await Storage.getPortfolios(currentUser.uid); // Refresh cache
+            UI.renderProfileView(currentUser, userProfile, portfoliosCache);
+            UI.showView('profile-view');
             break;
         case 'editor':
             document.getElementById('editor-title').textContent = currentlyEditingId ? 'Edit Portfolio' : 'Create New Portfolio';
