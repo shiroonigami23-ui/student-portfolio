@@ -3,7 +3,7 @@ import { THEMES } from './config.js';
 const headerActions = document.getElementById('header-actions');
 const mainContent = document.getElementById('main-content');
 const aiModalOverlay = document.getElementById('ai-modal-overlay');
-const aiDraftModalOverlay = document.getElementById('ai-draft-modal-overlay'); // New draft modal
+const aiDraftModalOverlay = document.getElementById('ai-draft-modal-overlay');
 
 export const showdownConverter = new showdown.Converter({
     simpleLineBreaks: true,
@@ -17,7 +17,7 @@ export function showView(viewId) {
     });
 }
 
-export function updateHeader(view, user) {
+export function updateHeader(view, user, userProfile) {
     headerActions.innerHTML = ''; 
 
     if (view === 'public-preview') {
@@ -32,17 +32,26 @@ export function updateHeader(view, user) {
             </select>`;
 
         let buttonsHTML = '';
-        if (view === 'editor' || view === 'preview' || view === 'dashboard') {
+        if (view !== 'login' && view !== 'profile') {
              buttonsHTML = (view !== 'dashboard') ? `<button id="back-to-dashboard-btn">Dashboard</button>` : '';
         }
         if (view === 'preview') {
             buttonsHTML += `<button id="download-pdf-btn" class="primary-btn">Download PDF</button>`;
         }
+        if (view === 'profile') {
+            buttonsHTML = `<button id="back-to-dashboard-btn" class="primary-btn">Back to Dashboard</button>`;
+        }
+        
+        // NEW: Add profile avatar
+        const profilePicUrl = userProfile?.photoURL || user.photoURL || 'https://placehold.co/40x40/0D1117/c9d1d9?text=P';
+        const avatarHTML = `<img src="${profilePicUrl}" alt="Profile" class="header-avatar" id="header-avatar-btn">`;
+
 
         headerActions.innerHTML = `
             ${themeSelectHTML}
             ${buttonsHTML}
             <button id="logout-btn">Logout</button>
+            ${avatarHTML}
         `;
 
         const savedTheme = localStorage.getItem('theme') || 'theme-space';
@@ -51,13 +60,28 @@ export function updateHeader(view, user) {
     }
 }
 
+// NEW: Function to render the profile view
+export function renderProfileView(user, userProfile, portfolios) {
+    document.getElementById('profile-name').textContent = user.displayName || 'User';
+    document.getElementById('profile-email').textContent = user.email;
+    
+    const profilePicUrl = userProfile?.photoURL || user.photoURL || 'https://placehold.co/150x150/0D1117/c9d1d9?text=Avatar';
+    document.getElementById('profile-pic-large').src = profilePicUrl;
+    
+    const total = portfolios.length;
+    const publicCount = portfolios.filter(p => p.isPublic).length;
+    
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-public').textContent = publicCount;
+    document.getElementById('stat-private').textContent = total - publicCount;
+}
+
 export function renderDashboard(portfolios) {
     const list = document.getElementById('portfolio-list');
     if (!portfolios || portfolios.length === 0) {
         list.innerHTML = `<div class="empty-state"><p>No portfolios yet. Click "Create New" to start!</p></div>`;
         return;
     }
-
     list.innerHTML = portfolios.sort((a, b) => (b.lastModified?.toDate() || 0) - (a.lastModified?.toDate() || 0))
         .map(p => `
         <div class="portfolio-card">
@@ -81,11 +105,10 @@ export async function renderPortfolioPreview(data) {
     try {
         const templateModule = await import(`./templates/${templateName}.js`);
         previewContainer.innerHTML = templateModule.render(data);
-        // Add all necessary classes for proper styling
         previewContainer.className = `portfolio-template ${templateName} ${portfolioTheme}`;
     } catch (error) {
         console.error(`Error loading template '${templateName}.js':`, error);
-        previewContainer.innerHTML = `<p style="color: var(--color-error); text-align: center;">Could not load portfolio template. Make sure the file '/templates/${templateName}.js' exists and has no errors.</p>`;
+        previewContainer.innerHTML = `<p style="color: var(--color-error); text-align: center;">Could not load portfolio template.</p>`;
     }
 }
 
@@ -113,24 +136,17 @@ function populateAppThemeSelector(currentTheme) {
     }
 }
 
-// --- AI MODAL FUNCTIONS ---
-
-export function showAiModal() {
-    aiModalOverlay.classList.remove('hidden');
-}
-
-export function hideAiModal() {
-    aiModalOverlay.classList.add('hidden');
-}
+export function showAiModal() { aiModalOverlay.classList.remove('hidden'); }
+export function hideAiModal() { aiModalOverlay.classList.add('hidden'); }
 
 export function setAiModalState(state, text = '') {
     const optionsDiv = document.getElementById('ai-modal-options');
     const loadingDiv = document.getElementById('ai-modal-loading');
     const resultDiv = document.getElementById('ai-modal-result');
     const resultTextarea = document.getElementById('ai-result-textarea');
-
+    
     [optionsDiv, loadingDiv, resultDiv].forEach(div => div.classList.add('hidden'));
-
+    
     if (state === 'options') {
         optionsDiv.classList.remove('hidden');
     } else if (state === 'loading') {
@@ -141,13 +157,11 @@ export function setAiModalState(state, text = '') {
     }
 }
 
-// --- NEW AI DRAFT MODAL FUNCTIONS ---
-
-export function showAiDraftModal() {
-    aiDraftModalOverlay.classList.remove('hidden');
-    document.getElementById('ai-draft-role-input').value = '';
+export function showAiDraftModal() { 
+    aiDraftModalOverlay.classList.remove('hidden'); 
+    document.getElementById('ai-draft-role-input').value = ''; 
+    document.getElementById('ai-draft-role-input').focus();
 }
-
-export function hideAiDraftModal() {
-    aiDraftModalOverlay.classList.add('hidden');
+export function hideAiDraftModal() { 
+    aiDraftModalOverlay.classList.add('hidden'); 
 }
