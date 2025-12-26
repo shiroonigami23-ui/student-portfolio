@@ -1,10 +1,11 @@
-name: Deploy with Secret Protection 🔒
+name: Deploy (Universal Fix) 🚀
 
 on:
   push:
     branches: ["main", "master"]
   workflow_dispatch:
 
+# Permissions for GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -24,12 +25,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      
-      - name: Inject API Key
+      # --- THE UNIVERSAL INJECTOR ---
+      # This finds EVERY file ending in .js, .html, .css, or .json
+      # and force-swaps the placeholder with your Secret.
+      - name: Inject API Key Everywhere
         run: |
-  
-  find . -type f \( -name "*.js" -o -name "*.html" \) -exec sed -i "s/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" {} +
-        
+          find . -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" {} +
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
