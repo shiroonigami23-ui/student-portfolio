@@ -5,7 +5,6 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
-# Grant permission to write to GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -25,14 +24,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # --- THE MAGIC STEP ---
-      # This swaps the placeholder with the Real Key inside the virtual machine
-      # It DOES NOT change your actual file in the repo.
+      
       - name: Inject API Key
         run: |
-  # This searches ALL html and js files for the placeholder and replaces it
+  
   find . -type f \( -name "*.js" -o -name "*.html" \) -exec sed -i "s/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" {} +
-        # If your config is in index.html, change 'script.js' above to 'index.html'
+        
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
