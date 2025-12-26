@@ -30,7 +30,7 @@ jobs:
       # It DOES NOT change your actual file in the repo.
       - name: Inject API Key
         run: |
-          sed -i 's/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g' script.js
+          sed -i 's/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_KEY_AUTO_1 }}/g' script.js
         # If your config is in index.html, change 'script.js' above to 'index.html'
 
       - name: Setup Pages
