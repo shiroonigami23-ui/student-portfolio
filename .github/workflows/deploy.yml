@@ -1,0 +1,46 @@
+name: Deploy with Secret Protection 🔒
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+# Grant permission to write to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # --- THE MAGIC STEP ---
+      # This swaps the placeholder with the Real Key inside the virtual machine
+      # It DOES NOT change your actual file in the repo.
+      - name: Inject API Key
+        run: |
+          sed -i 's/FIREBASE_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g' script.js
+        # If your config is in index.html, change 'script.js' above to 'index.html'
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
