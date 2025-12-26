@@ -1,0 +1,36 @@
+name: 🛠️ Auto-Repair Secrets
+
+on: [push]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Python & Crypto Libs
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - run: pip install requests pynacl
+
+      - name: Run Lazy Fixer
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: python .github/scripts/lazy_fix.py
+
+      - name: Commit Cleaned Code
+        run: |
+          git config --global user.name "Repair Bot"
+          git config --global user.email "bot@noreply.github.com"
+          if [[ `git status --porcelain` ]]; then
+            git add .
+            git commit -m "🔒 Security: Moved exposed secrets to GitHub Settings"
+            git push
+          fi
