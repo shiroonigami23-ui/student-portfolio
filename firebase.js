@@ -4,7 +4,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyACW4N486R7JF4OeAyVOr20XBnEa7Gzcgg",
+  apiKey: "FIREBASE_KEY_PLACEHOLDER",
   authDomain: "portfolio-architect-pro.firebaseapp.com",
   projectId: "portfolio-architect-pro",
   storageBucket: "portfolio-architect-pro.firebasestorage.app",
