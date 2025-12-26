@@ -1,0 +1,52 @@
+name: 🚀 Deploy with Secrets
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      # --- THE MAGIC STEP ---
+      # We expose ALL secrets to this step so the python script can read them
+      - name: Inject Secrets into Live Site
+        env:
+          # If you have specific secret names, list them here or use a wildcard approach if supported
+          # For safety, list your generated keys below:
+          FIREBASE_KEY_AUTO_1: ${{ secrets.FIREBASE_KEY_AUTO_1 }}
+          # Add others if the bot created more (check your Settings > Secrets)
+        run: python .github/scripts/inject_secrets.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
