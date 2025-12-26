@@ -4,11 +4,6 @@ import { createPortfolio, updatePortfolio as updatePortfolioObject } from './por
 
 // --- USER PROFILE FUNCTIONS ---
 
-/**
- * Gets a reference to the user's profile document.
- * @param {string} userId The user's unique ID.
- * @returns A DocumentReference for the user's profile.
- */
 function getUserProfileRef(userId) {
     if (!userId) throw new Error("User not authenticated.");
     // We store user profile data in a separate 'profiles' collection
