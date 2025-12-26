@@ -1,4 +1,4 @@
-const API_KEY = process.env.FIREBASE_KEY_AUTO_1; 
+const API_KEY = "AIzaSyBdsaHzE7dMvYKmurEfiqMtnk0Fb-12dwk"; 
 
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
