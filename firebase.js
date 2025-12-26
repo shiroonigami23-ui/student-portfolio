@@ -3,7 +3,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyACW4N486R7JF4OeAyVOr20XBnEa7Gzcgg",
   authDomain: "portfolio-architect-pro.firebaseapp.com",
@@ -17,6 +16,5 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export the services the rest of the app needs
 export const auth = getAuth(app);
 export const db = getFirestore(app);
