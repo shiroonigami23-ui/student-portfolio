@@ -27,7 +27,6 @@ async function callGeminiApi(payload) {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // The complete payload, including the system instruction, is now passed in.
             body: JSON.stringify(payload)
         });
 
