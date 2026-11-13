@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/hero.png" alt="Portfolio Architect Pro" width="100%">
+
 # 🚀 Portfolio Architect Pro
 
 ### AI-assisted portfolio builder — guided 6-step wizard, three templates, cloud storage and one-click publishing
